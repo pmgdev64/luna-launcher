@@ -1,0 +1,180 @@
+/* === Global === */
+.root {
+    -fx-font-family: "Comic Relief", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #e5e7eb;
+}
+
+/* === Window controls === */
+.window-control {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e5e7eb;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-padding: 4 10;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-color: rgba(255,255,255,0.25);
+    -fx-border-width: 1;
+}
+
+.window-control:hover {
+    -fx-background-color: rgba(255,255,255,0.1);
+}
+
+.window-control:pressed {
+    -fx-background-color: rgba(255,255,255,0.2);
+}
+
+/* === Play button === */
+.play-button {
+    -fx-background-color: linear-gradient(to right, #38bdf8, #0ea5e9);
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 14;
+    -fx-padding: 14 36;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(14,165,233,0.5), 12, 0, 0, 4);
+}
+
+.play-button:hover {
+    -fx-background-color: linear-gradient(to right, #0284c7, #0c4a6e);
+}
+
+.play-button:pressed {
+    -fx-background-color: linear-gradient(to right, #0369a1, #075985);
+}
+
+/* === Navigation bar === */
+.nav-bar {
+    -fx-background-color: rgba(15,23,42,0.6);
+    -fx-background-radius: 12;
+}
+
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f1f5f9;
+    -fx-font-size: 15px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-padding: 6 16;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: transparent;
+}
+
+.menu-button:hover {
+    -fx-background-color: rgba(255,255,255,0.12);
+}
+
+.menu-button:pressed {
+    -fx-background-color: rgba(255,255,255,0.2);
+}
+
+/* === Pages === */
+.stack-pane, .vbox, .hbox {
+    -fx-text-fill: #f8fafc;
+}
+
+.text {
+    -fx-fill: #f1f5f9;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* === Settings controls === */
+.settings-section {
+    -fx-padding: 12 0 6 0;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f1f5f9;
+}
+
+.check-box {
+    -fx-text-fill: #e5e7eb;
+    -fx-cursor: hand;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #38bdf8;
+    -fx-border-color: #0ea5e9;
+}
+
+.slider {
+    -fx-padding: 8 0;
+}
+
+.slider .track {
+    -fx-background-color: rgba(255,255,255,0.2);
+    -fx-background-radius: 4;
+}
+
+.slider .thumb {
+    -fx-background-color: #0ea5e9;
+    -fx-background-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(14,165,233,0.6), 6, 0, 0, 2);
+}
+
+.combo-box {
+    -fx-background-color: rgba(15,23,42,0.45);
+    -fx-background-radius: 8;
+    -fx-text-fill: #f1f5f9;
+}
+
+.combo-box:hover {
+    -fx-background-color: rgba(15,23,42,0.6);
+}
+
+.text-field {
+    -fx-background-color: rgba(15,23,42,0.45);
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255,255,255,0.2);
+    -fx-border-radius: 8;
+    -fx-text-fill: #f1f5f9;
+    -fx-padding: 6 10;
+}
+
+.text-field:focused {
+    -fx-border-color: #38bdf8;
+}
+
+/* === Default Buttons === */
+.button {
+    -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: rgba(255,255,255,0.15);
+    -fx-border-width: 1;
+    -fx-text-fill: #f3f4f6;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-padding: 6 16;
+    -fx-transition: all 0.25s ease-in-out;
+}
+
+.button:hover {
+    -fx-text-fill: #ffffff;
+}
+
+.button:pressed {
+    -fx-background-color: rgba(56,189,248,0.5);
+    -fx-text-fill: #ffffff;
+}
+
+/* === Notification Box === */
+.notification-box {
+    -fx-background-color: rgba(15,23,42,0.75); /* semi-transparent dark */
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: rgba(14,165,233,0.5);
+    -fx-padding: 12;
+    -fx-text-fill: #f1f5f9;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0, 0, 2);
+}
+
+.notification-box .text {
+    -fx-fill: #f8fafc;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
