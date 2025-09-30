@@ -19,3 +19,6 @@ module launcher {
     
 	opens application to javafx.graphics, javafx.fxml;
 }
+
+// đừng xoá các thành phần quan trọng, nếu không eclipse sẽ báo lỗi
+
