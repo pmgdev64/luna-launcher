@@ -39,4 +39,6 @@ git clone https://github.com/pmgdev64/luna-launcher.git
 cd luna-launcher
 ```
 
-```© 2025-2026 PmgTeam. All rights reserved```
+``` diff
+- © 2025-2026 PmgTeam. All rights reserved
+```
