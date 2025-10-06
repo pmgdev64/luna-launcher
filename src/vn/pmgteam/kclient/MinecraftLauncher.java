@@ -20,6 +20,8 @@ public class MinecraftLauncher {
     public interface ProgressCallback {
         void onProgress(double progress, String status);
     }
+    
+    public static LauncherConfig launcherConfig = new LauncherConfig();
 
     // === FETCH AVAILABLE VERSIONS ===
     public static List<String> fetchAvailableVersions() {
@@ -192,7 +194,10 @@ public class MinecraftLauncher {
         File versionJson = new File(versionDir, version + ".json");
         File versionJar  = new File(versionDir, version + ".jar");
 
-        // Nếu là legacy (rd, c, inf, a, b) thì chỉ cần jar
+        // Chọn Java path theo version
+        String javaPath = selectJavaPath(version);
+
+        // === LEGACY VERSION ===
         if (isLegacyVersion(version)) {
             if (!versionJar.exists()) {
                 throw new IOException("Legacy jar not found: " + versionJar.getAbsolutePath());
@@ -201,21 +206,18 @@ public class MinecraftLauncher {
             callback.onProgress(1.0, I18n.get("legacy.loading"));
 
             List<String> cmd = new ArrayList<>();
-            cmd.add(new File(System.getProperty("java.home"), "bin/java.exe").getAbsolutePath());
+            cmd.add(javaPath);
             cmd.add("-Xmx512M");
             cmd.add("-cp");
             cmd.add(versionJar.getAbsolutePath());
 
-            // Legacy main class mapping
-            String mainClass;
-            if (version.startsWith("rd")) {
-                mainClass = "com.mojang.rubydung.RubyDung";
-            } else {
-                mainClass = "com.mojang.minecraft.Minecraft";
-            }
-
+            String mainClass = version.startsWith("rd") ? "com.mojang.rubydung.RubyDung" : "com.mojang.minecraft.Minecraft";
             cmd.add(mainClass);
             cmd.add(session.username());
+
+            // **Lưu commandLine**
+            LauncherConfig.lastCommandLine = new ArrayList<>(cmd);
+            launcherConfig.save();
 
             ProcessBuilder pb = new ProcessBuilder(cmd);
             pb.directory(DOT_MINECRAFT);
@@ -224,7 +226,7 @@ public class MinecraftLauncher {
             return;
         }
 
-        // === Modern (1.6+) ===
+        // === MODERN (1.6+) ===
         if (!versionJson.exists()) {
             callback.onProgress(0, I18n.get("version.metadata"));
             downloadVersionJson(version);
@@ -241,7 +243,6 @@ public class MinecraftLauncher {
         callback.onProgress(0.7, I18n.get("assets.download"));
         downloadAssets(version, callback);
 
-        // === Extract natives ===
         callback.onProgress(0.9, I18n.get("natives.extract"));
         extractNatives(version);
 
@@ -250,12 +251,11 @@ public class MinecraftLauncher {
         String mainClass = versionData.optString("mainClass", "net.minecraft.client.main.Main");
 
         List<String> cmd = new ArrayList<>();
-        cmd.add(new File(System.getProperty("java.home"), "bin/java.exe").getAbsolutePath());
+        cmd.add(javaPath); // Java path
         cmd.add("-Xmx2G");
         cmd.add("-Xms1G");
 
         File nativesDir = new File(versionDir, "natives");
-        // add both for compatibility
         cmd.add("-Djava.library.path=" + nativesDir.getAbsolutePath());
         cmd.add("-Dorg.lwjgl.librarypath=" + nativesDir.getAbsolutePath());
 
@@ -266,23 +266,33 @@ public class MinecraftLauncher {
         // Main class
         cmd.add(mainClass);
 
-        // === Authentication & game args ===
-        cmd.add("--username");   cmd.add(session.username());
-        cmd.add("--version");    cmd.add(version);
-        cmd.add("--gameDir");    cmd.add(DOT_MINECRAFT.getAbsolutePath());
-        cmd.add("--assetsDir");  cmd.add(new File(DOT_MINECRAFT, "assets").getAbsolutePath());
-        cmd.add("--accessToken");cmd.add(session.accessToken() != null ? session.accessToken() : "0");
-        cmd.add("--uuid");       cmd.add(session.uuid() != null ? session.uuid() : "0");
+        // Game args
+        cmd.add("--username");      cmd.add(session.username());
+        cmd.add("--version");       cmd.add(version);
+        cmd.add("--gameDir");       cmd.add(DOT_MINECRAFT.getAbsolutePath());
+        cmd.add("--assetsDir");     cmd.add(new File(DOT_MINECRAFT, "assets").getAbsolutePath());
+        cmd.add("--accessToken");   cmd.add(session.accessToken() != null ? session.accessToken() : "0");
+        cmd.add("--uuid");          cmd.add(session.uuid() != null ? session.uuid() : "0");
         cmd.add("--userProperties");cmd.add("{}");
+
+        // === Lưu commandLine vào config ===
+        launcherConfig.lastCommandLine = new ArrayList<>(cmd);
+        launcherConfig.save();
 
         callback.onProgress(1.0, I18n.get("game.launching"));
 
+        // Start game
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(DOT_MINECRAFT);
         pb.inheritIO();
         pb.start();
-        
+
         System.out.println("Minecraft Arguments: " + cmd);
+    }
+
+    // === CHỌN JAVA THEO VERSION ===
+    private static String selectJavaPath(String version) {
+    	return "C:\\Program Files\\Java\\jre1.8.0_202\\bin\\java.exe";
     }
 
 

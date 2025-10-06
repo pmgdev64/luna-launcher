@@ -1,32 +1,52 @@
 package application;
 
+import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
+import javafx.animation.SequentialTransition;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.CacheHint;
+import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
+import javafx.scene.SceneAntialiasing;
+import javafx.scene.SubScene;
 import javafx.scene.control.*;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Box;
+import javafx.scene.shape.MeshView;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.TriangleMesh;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+import javafx.stage.FileChooser;
 import javafx.stage.Popup;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
@@ -34,23 +54,35 @@ import vn.pmgteam.kclient.ConfigManager;
 import vn.pmgteam.kclient.I18n;
 import vn.pmgteam.kclient.LauncherConfig;
 import vn.pmgteam.kclient.LoadingGui;
+import vn.pmgteam.kclient.LunarCalendar;
 import vn.pmgteam.kclient.MessageBox;
 import vn.pmgteam.kclient.OpenFileBox;
 import vn.pmgteam.kclient.UserProfile;
+import vn.pmgteam.kclient.LunarDate;
 import vn.pmgteam.kclient.MinecraftLauncher;
+import vn.pmgteam.kclient.MinecraftSkinViewer;
 import vn.pmgteam.kclient.NofiticationBox;
 import vn.pmgteam.kclient.auth.AuthManager;
 import vn.pmgteam.kclient.auth.LoginAuthBox;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -65,6 +97,10 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
 import com.luciad.imageio.webp.*;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 
 public class Main extends Application {
 
@@ -86,6 +122,8 @@ public class Main extends Application {
     
     public MinecraftLauncher minecraftLauncher = new MinecraftLauncher();
     
+    public static String lunaDir = userHome + "/Appdata/Roaming/.luna";
+    
     private final List<Popup> activePopups = new ArrayList<>();
     private final double baseX = 980; // góc phải (có thể chỉnh theo màn hình)
     private final double baseY = 660; // góc dưới
@@ -97,6 +135,10 @@ public class Main extends Application {
     
     // Ở đầu class Main, thêm:
     private StackPane overlay;
+    
+    public static Logger logInstance = LogManager.getLogger("LunaLauncher");
+    
+    //public FlowPane skinsContainer;
 
     
     private boolean isVersionInstalled(String version) {
@@ -120,6 +162,14 @@ public class Main extends Application {
         fadeOut.setOnFinished(e -> overlay.setVisible(false));
         fadeOut.play();
     }
+    
+    private static final Interpolator CUBIC_OUT = new Interpolator() {
+        @Override
+        protected double curve(double t) {
+            // cubic ease out: starts fast, ends slow
+            return 1 - Math.pow(1 - t, 3);
+        }
+    };
     
     private Image loadImage(String url) {
         try {
@@ -252,9 +302,203 @@ public class Main extends Application {
             return new JSONObject(response);
         }
     }
+    
+    private static void downloadMod(String projectId, String versionId) throws IOException {
+        // Modrinth API link tải file mod: 
+        // https://api.modrinth.com/v2/project/{projectId}/version/{versionId}
+        String versionUrl = "https://api.modrinth.com/v2/version/" + versionId;
+        JSONObject versionJson;
+        try (Scanner sc = new Scanner(new URL(versionUrl).openStream()).useDelimiter("\\A")) {
+            String response = sc.hasNext() ? sc.next() : "";
+            versionJson = new JSONObject(response);
+        }
+
+        JSONArray files = versionJson.getJSONArray("files");
+        if (files.length() == 0) throw new IOException("No files found for this mod version.");
+
+        JSONObject file = files.getJSONObject(0);
+        String fileUrl = file.getString("url");
+        String fileName = file.getString("filename");
+
+        // Tạo thư mục mods nếu chưa có
+        Path modsDir = Paths.get(System.getProperty("user.home"), "\\AppData\\Roaming\\.minecraft", "mods");
+        if (!Files.exists(modsDir)) {
+            Files.createDirectories(modsDir);
+        }
 
 
+        // Download file mod
+        try (InputStream in = new URL(fileUrl).openStream()) {
+            Files.copy(in, modsDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+        }
 
+        System.out.println("Mod " + fileName + " downloaded to mods/");
+    }
+
+
+    // === Load tất cả skins, toggle front/back ===
+    public void loadSkins2D(FlowPane container) {
+        container.getChildren().clear();
+        File skinsDir = new File(System.getProperty("user.home"), "AppData/Roaming/.luna/skins");
+        if (!skinsDir.exists()) return;
+
+        for (File skinFile : skinsDir.listFiles(f -> f.getName().endsWith(".png"))) {
+            try {
+                Image skin = new Image(skinFile.toURI().toString());
+
+                ImageView front = buildMinecraftChar2DFront(skin);
+                front.setFitWidth(64 * 2);
+                front.setFitHeight(128 * 2);
+                front.setPreserveRatio(true);
+
+                ImageView back = buildMinecraftChar2DBack(skin);
+                back.setFitWidth(64 * 2);
+                back.setFitHeight(128 * 2);
+                back.setPreserveRatio(true);
+
+                HBox previews = new HBox(10, front, back);
+                previews.setAlignment(Pos.CENTER);
+
+                VBox skinBox = new VBox(5, previews, new Label(skinFile.getName()));
+                skinBox.setAlignment(Pos.CENTER);
+
+                container.getChildren().add(skinBox);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+
+    // === Render mặt trước ===
+    public ImageView buildMinecraftChar2DFront(Image skin) {
+        int scale = 4;
+        int w = 16, h = 32;
+        WritableImage canvas = new WritableImage(w * scale, h * scale);
+        PixelReader r = skin.getPixelReader();
+        PixelWriter wri = canvas.getPixelWriter();
+
+        // Head (front 8x8 at 8,8)
+        copyRegion(r, wri, 8, 8, 8, 8, 4, 0, scale);
+
+        // Body (front 8x12 at 20,20)
+        copyRegion(r, wri, 20, 20, 8, 12, 4, 8, scale);
+
+        // Right Arm (front 4x12 at 44,20)
+        copyRegion(r, wri, 44, 20, 4, 12, 12, 8, scale);
+
+        // Left Arm (mirror: 36,52 nếu skin 64x64, fallback 44,20)
+        copyRegion(r, wri, 36, 52, 4, 12, 0, 8, scale);
+
+        // Right Leg (front 4x12 at 4,20)
+        copyRegion(r, wri, 4, 20, 4, 12, 8, 20, scale);
+
+        // Left Leg (front 4x12 at 20,52 nếu 64x64, fallback 4,20)
+        copyRegion(r, wri, 20, 52, 4, 12, 4, 20, scale);
+
+        ImageView iv = new ImageView(canvas);
+        iv.setSmooth(false);
+        return iv;
+    }
+
+    // === Render mặt sau ===
+    public ImageView buildMinecraftChar2DBack(Image skin) {
+        int scale = 4;
+        int w = 16, h = 32;
+        WritableImage canvas = new WritableImage(w * scale, h * scale);
+        PixelReader r = skin.getPixelReader();
+        PixelWriter wri = canvas.getPixelWriter();
+
+        // Head (back 8x8 at 24,8)
+        copyRegion(r, wri, 24, 8, 8, 8, 4, 0, scale);
+
+        // Body (back 8x12 at 32,20)
+        copyRegion(r, wri, 32, 20, 8, 12, 4, 8, scale);
+
+        // Right Arm back (4x12 at 52,20)
+        copyRegion(r, wri, 52, 20, 4, 12, 12, 8, scale);
+
+        // Left Arm back (4x12 at 44,52 nếu 64x64)
+        copyRegion(r, wri, 44, 52, 4, 12, 0, 8, scale);
+
+        // Right Leg back (4x12 at 12,20)
+        copyRegion(r, wri, 12, 20, 4, 12, 8, 20, scale);
+
+        // Left Leg back (4x12 at 28,52 nếu 64x64)
+        copyRegion(r, wri, 28, 52, 4, 12, 4, 20, scale);
+
+        ImageView iv = new ImageView(canvas);
+        iv.setSmooth(false);
+        return iv;
+    }
+
+    // === Helper copy ===
+    private void copyRegion(PixelReader r, PixelWriter wri,
+                            int sx, int sy, int sw, int sh,
+                            int dx, int dy, int scale) {
+        for (int y = 0; y < sh; y++)
+            for (int x = 0; x < sw; x++) {
+                Color c = r.getColor(sx + x, sy + y);
+                for (int dy2 = 0; dy2 < scale; dy2++)
+                    for (int dx2 = 0; dx2 < scale; dx2++)
+                        wri.setColor((dx + x) * scale + dx2,
+                                     (dy + y) * scale + dy2, c);
+            }
+    }
+    
+    public static void apply(ComboBox<?> comboBox) {
+        comboBox.showingProperty().addListener((obs, wasShowing, isNowShowing) -> {
+            if (isNowShowing) {
+                Platform.runLater(() -> {
+                    if (comboBox.getSkin() instanceof ComboBoxListViewSkin<?> skin) {
+                        ListView<?> listView = (ListView<?>) skin.getPopupContent();
+                        Node popup = listView;
+
+                        popup.setOpacity(0);
+                        popup.setTranslateY(-15);
+                        popup.setScaleY(0.9);
+
+                        Timeline openAnim = new Timeline(
+                            new KeyFrame(Duration.ZERO,
+                                new KeyValue(popup.opacityProperty(), 0),
+                                new KeyValue(popup.translateYProperty(), -15),
+                                new KeyValue(popup.scaleYProperty(), 0.9)
+                            ),
+                            new KeyFrame(Duration.millis(360),
+                                new KeyValue(popup.opacityProperty(), 1, CUBIC_OUT),
+                                new KeyValue(popup.translateYProperty(), 0, CUBIC_OUT),
+                                new KeyValue(popup.scaleYProperty(), 1, CUBIC_OUT)
+                            )
+                        );
+                        openAnim.play();
+                    }
+                });
+            } else {
+                // Khi ComboBox đóng lại, thêm hiệu ứng trượt lên
+                if (comboBox.getSkin() instanceof ComboBoxListViewSkin<?> skin) {
+                    ListView<?> listView = (ListView<?>) skin.getPopupContent();
+                    Node popup = listView;
+
+                    Timeline closeAnim = new Timeline(
+                        new KeyFrame(Duration.ZERO,
+                            new KeyValue(popup.opacityProperty(), 1),
+                            new KeyValue(popup.translateYProperty(), 0),
+                            new KeyValue(popup.scaleYProperty(), 1)
+                        ),
+                        new KeyFrame(Duration.millis(240),
+                            new KeyValue(popup.opacityProperty(), 0, CUBIC_OUT),
+                            new KeyValue(popup.translateYProperty(), -10, CUBIC_OUT),
+                            new KeyValue(popup.scaleYProperty(), 0.95, CUBIC_OUT)
+                        )
+                    );
+                    closeAnim.play();
+                }
+            }
+        });
+    }
+
+
+    
     @Override
     public void start(Stage stage) throws Exception {
 
@@ -295,23 +539,51 @@ public class Main extends Application {
     	Button close = new Button(I18n.get("window.close"));
     	close.getStyleClass().add("window-control");
     	close.setOnAction(e -> {
-    	    ScaleTransition scale = new ScaleTransition(Duration.millis(300), root);
+    	    // ScaleTransition gốc
+    	    ScaleTransition scale = new ScaleTransition(Duration.millis(350), root);
     	    scale.setToX(0);
     	    scale.setToY(0);
     	    scale.setInterpolator(Interpolator.EASE_IN);
 
-    	    FadeTransition fade = new FadeTransition(Duration.millis(300), root);
+    	    // FadeTransition gốc
+    	    FadeTransition fade = new FadeTransition(Duration.millis(350), root);
     	    fade.setToValue(0);
     	    fade.setInterpolator(Interpolator.EASE_OUT);
 
-    	    TranslateTransition slide = new TranslateTransition(Duration.millis(300), root);
+    	    // TranslateTransition gốc
+    	    TranslateTransition slide = new TranslateTransition(Duration.millis(350), root);
     	    slide.setToY(200);
     	    slide.setInterpolator(Interpolator.EASE_IN);
 
-    	    ParallelTransition pt = new ParallelTransition(scale, fade, slide);
+    	    // --------- Viền bo góc ---------
+    	    Rectangle border = new Rectangle(root.getWidth(), root.getHeight());
+    	    border.setArcWidth(20);   // bo góc X
+    	    border.setArcHeight(20);  // bo góc Y
+    	    border.setFill(Color.TRANSPARENT);
+    	    border.setStroke(Color.DARKBLUE);
+    	    border.setStrokeWidth(3);
+
+    	    // Thêm vào root (hoặc overlay pane)
+    	    root.getChildren().add(border);
+
+    	    // Animate viền fade + shrink
+    	    Timeline borderAnim = new Timeline(
+    	        new KeyFrame(Duration.ZERO,
+    	            new KeyValue(border.strokeWidthProperty(), 3),
+    	            new KeyValue(border.opacityProperty(), 1)
+    	        ),
+    	        new KeyFrame(Duration.millis(300),
+    	            new KeyValue(border.strokeWidthProperty(), 0),
+    	            new KeyValue(border.opacityProperty(), 0)
+    	        )
+    	    );
+
+    	    // --------- Kết hợp tất cả ---------
+    	    ParallelTransition pt = new ParallelTransition(scale, fade, slide, borderAnim);
     	    pt.setOnFinished(ev -> stage.close());
     	    pt.play();
     	});
+
     	topBar.getChildren().addAll(minimize, close);
     	layout.setTop(topBar);
 
@@ -342,22 +614,6 @@ public class Main extends Application {
     	}
     	versionSelect.setPromptText(I18n.get("menu.selectversion"));
 
-    	versionSelect.setCellFactory(lv -> new ListCell<String>() {
-    	    @Override
-    	    protected void updateItem(String item, boolean empty) {
-    	        super.updateItem(item, empty);
-    	        if (empty || item == null) {
-    	            setText(null);
-    	            setStyle("");
-    	        } else {
-    	            setText(item);
-    	            setTextFill(Color.WHITE);
-    	            setStyle("-fx-background-color: #2a2a2a; -fx-border-radius: 6;");
-    	            setOnMouseEntered(e -> setStyle("-fx-background-color: #3a3a3a; -fx-border-radius: 6;"));
-    	            setOnMouseExited(e -> setStyle("-fx-background-color: #2a2a2a; -fx-border-radius: 6;"));
-    	        }
-    	    }
-    	});
 
     	versionSelect.setButtonCell(new ListCell<String>() {
     	    @Override
@@ -542,7 +798,7 @@ public class Main extends Application {
     	VBox missionsPage = new VBox(12);
     	missionsPage.setAlignment(Pos.TOP_CENTER);
     	missionsPage.setPadding(new Insets(30));
-    	missionsPage.setStyle("-fx-background-color: #1e1e1e; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #00aaff; -fx-border-width: 2;");
+    	missionsPage.setStyle("-fx-background-color: rgba(50,50,50,0.5); -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #00aaff; -fx-border-width: 2;");
 
     	Text missionsTitle = new Text(I18n.get("menu.missions"));
     	missionsTitle.setStyle("-fx-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
@@ -578,7 +834,7 @@ public class Main extends Application {
     	VBox modsPage = new VBox(12);
         modsPage.setAlignment(Pos.TOP_CENTER);
         modsPage.setPadding(new Insets(20));
-        modsPage.setStyle("-fx-background-color: #1e1e1e; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #00aaff; -fx-border-width: 2;");
+        modsPage.setStyle("-fx-background-color: rgba(50,50,50,0.3); -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #00aaff; -fx-border-width: 2;");
 
         Text modsTitle = new Text("Mods");
         modsTitle.setStyle("-fx-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
@@ -618,11 +874,12 @@ public class Main extends Application {
         Function<JSONObject, VBox> createModCard = (JSONObject mod) -> {
             VBox card = new VBox(5);
             card.setPadding(new Insets(10));
-            card.setStyle("-fx-background-color: #36393f; -fx-background-radius: 8;");
+            card.setStyle("-fx-background-color: rgba(50,50,50,0,83); -fx-background-radius: 8;");
 
             // --- Top bar (thumbnail + text) ---
             HBox topBarContainer = new HBox(10);
             topBarContainer.setAlignment(Pos.CENTER_LEFT);
+            topBarContainer.setStyle("-fx-background-color: rgba(50,50,50, 0.63)");
 
             // Thumbnail với bo góc
             String iconUrl = mod.optString("icon_url", "");
@@ -706,17 +963,67 @@ public class Main extends Application {
             Button installBtn = new Button(installedMods.getItems().contains(mod.getString("title")) ? "Delete" : "Install");
             installBtn.setOnAction(e -> {
                 String modName = mod.getString("title");
+
                 if (!installedMods.getItems().contains(modName)) {
                     installedMods.getItems().add(modName);
                     installBtn.setText("Delete");
-                    // TODO: Download mod file from Modrinth
+
+                    // --- Download mod in background ---
+                    new Thread(() -> {
+                        try {
+                            // Lấy projectId và phiên bản mới nhất
+                            String projectId = mod.getString("id");
+                            JSONArray versions = mod.optJSONArray("versions");
+                            if (versions != null && versions.length() > 0) {
+                                String versionId = versions.getString(0);
+                                downloadMod(projectId, versionId); // Tải về mods/
+                                Platform.runLater(() -> {
+                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                    alert.setHeaderText("Mod Installed");
+                                    alert.setContentText(modName + " đã được tải về thư mục mods/");
+                                    alert.show();
+                                });
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            Platform.runLater(() -> {
+                                Alert alert = new Alert(Alert.AlertType.ERROR);
+                                alert.setHeaderText("Download Failed");
+                                alert.setContentText("Không thể tải mod: " + modName);
+                                alert.show();
+                            });
+                        }
+                    }).start();
+
                 } else {
                     installedMods.getItems().remove(modName);
                     installBtn.setText("Install");
+
+                    // --- Delete mod file from mods/ ---
+                    Path modsDir = Paths.get("mods");
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(modsDir)) {
+                        for (Path file : stream) {
+                            if (file.getFileName().toString().toLowerCase().contains(modName.toLowerCase())) {
+                                Files.delete(file);
+                            }
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
             });
 
+
             bottomBar.getChildren().addAll(downloads, installBtn);
+            
+            card.getStyleClass().add("mod-card");
+            topBarContainer.getStyleClass().add("mod-card-topbar");
+            bottomBar.getStyleClass().add("mod-card-bottombar");
+            downloads.getStyleClass().add("mod-card-downloads");
+            installBtn.getStyleClass().add("mod-card-button");
+            modTitle.getStyleClass().add("mod-card-title");
+            modDesc.getStyleClass().add("mod-card-desc");
+            authorLabel.getStyleClass().add("mod-card-author");
 
             // --- Assemble card ---
             card.getChildren().addAll(topBarContainer, bottomBar);
@@ -751,65 +1058,437 @@ public class Main extends Application {
 
         modsPage.getChildren().addAll(modsTitle, topListBar, contentLayout);
     	// --- Settings page ---
-    	VBox settingsPage = new VBox(20);
-    	settingsPage.setAlignment(Pos.TOP_LEFT);
-    	settingsPage.setPadding(new Insets(30));
+     // ===== SETTINGS PAGE =====
+        VBox settingsPage = new VBox(10);
+        settingsPage.setPadding(new Insets(15));
+        settingsPage.setStyle("-fx-background-color: rgba(50,50,50,0.3); -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #00aaff; -fx-border-width: 2;");
+        VBox.setVgrow(settingsPage, Priority.ALWAYS);
 
-    	Text settingsTitle = new Text(I18n.get("menu.settings"));
-    	settingsTitle.setStyle("-fx-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;");
+        // ===== TAB MENU =====
+        TabPane settingsTabPane = new TabPane();
+        settingsTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        settingsTabPane.setTabMinHeight(25);
+        settingsTabPane.setTabMaxHeight(30);
+        settingsTabPane.setTabMinWidth(100);
+        settingsTabPane.setTabMaxWidth(120);
+        settingsTabPane.setStyle("-fx-background-border: 8; -fx-border-radius: 8;");
+        VBox.setVgrow(settingsTabPane, Priority.ALWAYS);
+        
+        settingsTabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+        	if (newTab != null && newTab.getContent() != null) {
+                Node content = newTab.getContent();
+                content.setTranslateX(40); // bắt đầu trượt nhẹ từ phải
+                content.setOpacity(0);
 
-    	HBox gamePathBox = new HBox(10);
-    	Label gamePathLabel = new Label(I18n.get("settings.gamepath"));
-    	gamePathLabel.setStyle("-fx-fill: white");
-    	TextField gamePathField = new TextField(defaultGamePath);
-    	Button browseBtn = new Button(I18n.get("settings.browse"));
-    	gamePathBox.getChildren().addAll(gamePathLabel, gamePathField, browseBtn);
+                Timeline timeline = new Timeline(
+                    new KeyFrame(Duration.ZERO,
+                        new KeyValue(content.translateXProperty(), 40),
+                        new KeyValue(content.opacityProperty(), 0)
+                    ),
+                    new KeyFrame(Duration.millis(500),
+                        new KeyValue(content.translateXProperty(), 0, CUBIC_OUT),
+                        new KeyValue(content.opacityProperty(), 1, CUBIC_OUT)
+                    )
+                );
 
-    	browseBtn.setOnAction(e -> {
-    	    OpenFileBox.show(I18n.get("settings.selectfolder"), new File(System.getProperty("user.home")), selected -> {
-    	        if (selected != null) {
-    	            selectedGamePath = selected.getAbsolutePath();
-    	            gamePathField.setText(selectedGamePath);
-    	            versionSelect.getItems().clear();
-    	            versionSelect.getItems().addAll(loadMinecraftVersions(selectedGamePath));
-    	        }
-    	    });
-    	});
+                timeline.play();
+            }
+        });
 
-    	CheckBox autoUpdate = new CheckBox(I18n.get("settings.autoupdate"));
-    	autoUpdate.setSelected(cfg.autoUpdate);
 
-    	HBox themeBox = new HBox(10);
-    	Label themeLabel = new Label(I18n.get("settings.theme"));
-    	ComboBox<String> themeSelect = new ComboBox<>();
-    	themeSelect.getItems().addAll(I18n.get("settings.theme.light"), I18n.get("settings.theme.dark"), I18n.get("settings.theme.system"));
-    	themeSelect.setValue(cfg.theme);
+        // ===== GENERAL TAB =====
+        GridPane generalSettingsGrid = new GridPane();
+        generalSettingsGrid.setHgap(20);
+        generalSettingsGrid.setVgap(10);
+        generalSettingsGrid.setPadding(new Insets(10));
+        generalSettingsGrid.setStyle("-fx-background-border: 8; -fx-border-radius: 8;");
 
-    	themeBox.getChildren().addAll(themeLabel, themeSelect);
+        int rowGeneral = 0;
 
-    	Button saveBtn = new Button(I18n.get("settings.save"));
-    	saveBtn.setOnAction(e -> {
-    	    cfg.gamePath = gamePathField.getText();
-    	    cfg.autoUpdate = autoUpdate.isSelected();
-    	    cfg.theme = themeSelect.getValue();
+        // Game Path
+        generalSettingsGrid.add(new Label(I18n.get("settings.gamepath")), 0, rowGeneral);
+        TextField gamePathField = new TextField(defaultGamePath);
+        gamePathField.setPrefWidth(350);
+        generalSettingsGrid.add(gamePathField, 1, rowGeneral++);
+        Button browseBtn = new Button(I18n.get("settings.browse"));
+        generalSettingsGrid.add(browseBtn, 2, rowGeneral - 1);
 
-    	    // Save config
-    	    configManager.save();
+        browseBtn.setOnAction(e -> {
+            OpenFileBox.show(I18n.get("settings.selectfolder"), new File(System.getProperty("user.home")), selected -> {
+                if (selected != null) {
+                    selectedGamePath = selected.getAbsolutePath();
+                    gamePathField.setText(selectedGamePath);
+                    versionSelect.getItems().clear();
+                    versionSelect.getItems().addAll(loadMinecraftVersions(selectedGamePath));
+                }
+            });
+        });
 
-    	    this.showNotification(root, I18n.get("settings.saved"), 2000);
+        // Auto Update
+        generalSettingsGrid.add(new Label(I18n.get("settings.autoupdate")), 0, rowGeneral);
+        CheckBox autoUpdate = new CheckBox();
+        autoUpdate.setSelected(cfg.autoUpdate);
+        generalSettingsGrid.add(autoUpdate, 1, rowGeneral++);
 
-    	    // Update version list
-    	    versionSelect.getItems().clear();
-    	    versionSelect.getItems().addAll(loadMinecraftVersions(cfg.gamePath));
-    	});
+        // Theme
+        generalSettingsGrid.add(new Label(I18n.get("settings.theme")), 0, rowGeneral);
+        ComboBox<String> themeSelect = new ComboBox<>();
+        themeSelect.getItems().addAll(
+            I18n.get("settings.theme.light"),
+            I18n.get("settings.theme.dark"),
+            I18n.get("settings.theme.system")
+        );
 
-    	settingsPage.getChildren().addAll(settingsTitle, gamePathBox, autoUpdate, themeBox, saveBtn);
+        themeSelect.setValue(cfg.theme);
+        
+        this.apply(themeSelect);
+        
+        generalSettingsGrid.add(themeSelect, 1, rowGeneral++);
+
+        // Buttons
+        HBox saveBox = new HBox(10);
+        saveBox.setAlignment(Pos.CENTER_RIGHT);
+        Button saveBtn = new Button(I18n.get("settings.save"));
+        saveBox.getChildren().add(saveBtn);
+
+        saveBtn.setOnAction(e -> {
+            cfg.gamePath = gamePathField.getText();
+            cfg.autoUpdate = autoUpdate.isSelected();
+            cfg.theme = themeSelect.getValue();
+
+            configManager.save();
+            this.showNotification(root, I18n.get("settings.saved"), 2000);
+
+            versionSelect.getItems().clear();
+            versionSelect.getItems().addAll(loadMinecraftVersions(cfg.gamePath));
+        });
+
+        // General tab content
+        VBox generalSettingsContent = new VBox(10, generalSettingsGrid, saveBox);
+        generalSettingsContent.setPadding(new Insets(10));
+        generalSettingsContent.setStyle("-fx-background-color: rgba(50,50,50,0.3); -fx-background-radius: 15; -fx-border-radius: 15;");
+
+        ScrollPane generalSettingsScroll = new ScrollPane(generalSettingsContent);
+        generalSettingsScroll.setFitToWidth(true);
+        generalSettingsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        Tab generalSettingsTab = new Tab(I18n.get("settings.general"), generalSettingsScroll);
+        generalSettingsTab.setClosable(false);
+
+        // ===== ADVANCED TAB =====
+        GridPane advSettingsGrid = new GridPane();
+        advSettingsGrid.setHgap(20);
+        advSettingsGrid.setVgap(10);
+        advSettingsGrid.setPadding(new Insets(10));
+
+        int rowAdv = 0;
+
+        advSettingsGrid.add(new Label("Enable Logging"), 0, rowAdv);
+        CheckBox loggingBox = new CheckBox();
+        loggingBox.setSelected(true);
+        advSettingsGrid.add(loggingBox, 1, rowAdv++);
+
+        advSettingsGrid.add(new Label("Experimental Features"), 0, rowAdv);
+        CheckBox expFeatures = new CheckBox();
+        advSettingsGrid.add(expFeatures, 1, rowAdv++);
+
+        VBox advSettingsContent = new VBox(10, advSettingsGrid);
+        advSettingsContent.setPadding(new Insets(10));
+        advSettingsContent.setStyle("-fx-background-color: rgba(50,50,50,0.4); -fx-background-radius: 15; -fx-border-radius: 15;");
+
+        ScrollPane advSettingsScroll = new ScrollPane(advSettingsContent);
+        advSettingsScroll.setFitToWidth(true);
+        advSettingsScroll.setStyle("-fx-background: transparent; -fx-background-radius: 8; -fx-border-radius: 8;");
+
+        Tab advSettingsTab = new Tab(I18n.get("settings.advanced"), advSettingsScroll);
+        advSettingsTab.setClosable(false);
+
+        // ===== Add Tabs =====
+        settingsTabPane.getTabs().addAll(generalSettingsTab, advSettingsTab);
+        settingsPage.getChildren().add(settingsTabPane);
+
     	
     	// --- Artist Page ---
 
+    	// --- Skins page ---
+    	VBox skinPage = new VBox(10);
+    	skinPage.setPadding(new Insets(15));
+    	skinPage.setStyle("-fx-background-color: rgba(50,50,50,0.4)"); // nền nâu Minecraft
+
+    	// ===== TAB MENU =====
+    	TabPane tabPane = new TabPane();
+    	tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+
+    	// chỉnh kích cỡ tabPane
+    	tabPane.setTabMinHeight(25);  // chiều cao tối thiểu
+    	tabPane.setTabMaxHeight(30);  // chiều cao tối đa
+    	tabPane.setTabMinWidth(90);   // chiều rộng tối thiểu mỗi tab
+    	tabPane.setTabMaxWidth(90);
+
+    	VBox.setVgrow(tabPane, Priority.ALWAYS);
+
+
+    	// ===== GRID OPTIONS =====
+    	GridPane optionsGrid = new GridPane();
+    	optionsGrid.setHgap(20);
+    	optionsGrid.setVgap(10);
+    	optionsGrid.setPadding(new Insets(10));
+
+    	int row = 0;
+
+    	// Render Distance
+    	optionsGrid.add(new Label("Render Distance"), 0, row);
+    	ComboBox<String> renderDistance = new ComboBox<>();
+    	renderDistance.getItems().addAll("8 chunks", "12 chunks", "16 chunks");
+    	renderDistance.setValue("12 chunks");
+    	optionsGrid.add(renderDistance, 1, row++);
+
+    	// Max Shadow Distance
+    	optionsGrid.add(new Label("Max Shadow Distance"), 0, row);
+    	ComboBox<String> shadowDistance = new ComboBox<>();
+    	shadowDistance.getItems().addAll("16 Chunks", "32 Chunks", "64 Chunks");
+    	shadowDistance.setValue("32 Chunks");
+    	optionsGrid.add(shadowDistance, 1, row++);
+
+    	// Simulation Distance
+    	optionsGrid.add(new Label("Simulation Distance"), 0, row);
+    	ComboBox<String> simDistance = new ComboBox<>();
+    	simDistance.getItems().addAll("8 chunks", "12 chunks", "20 chunks");
+    	simDistance.setValue("12 chunks");
+    	optionsGrid.add(simDistance, 1, row++);
+
+    	// Brightness
+    	optionsGrid.add(new Label("Brightness"), 0, row);
+    	ComboBox<String> brightness = new ComboBox<>();
+    	brightness.getItems().addAll("Moody", "Bright");
+    	brightness.setValue("Moody");
+    	optionsGrid.add(brightness, 1, row++);
+
+    	// GUI Scale
+    	optionsGrid.add(new Label("GUI Scale"), 0, row);
+    	ComboBox<String> guiScale = new ComboBox<>();
+    	guiScale.getItems().addAll("Small", "Normal", "Large", "Auto");
+    	guiScale.setValue("Auto");
+    	optionsGrid.add(guiScale, 1, row++);
+
+    	// Fullscreen
+    	optionsGrid.add(new Label("Fullscreen"), 0, row);
+    	CheckBox fullscreen = new CheckBox();
+    	optionsGrid.add(fullscreen, 1, row++);
+
+    	// VSync
+    	optionsGrid.add(new Label("VSync"), 0, row);
+    	CheckBox vsync = new CheckBox();
+    	vsync.setSelected(true);
+    	optionsGrid.add(vsync, 1, row++);
+
+    	// Max Framerate
+    	optionsGrid.add(new Label("Max Framerate"), 0, row);
+    	ComboBox<String> framerate = new ComboBox<>();
+    	framerate.getItems().addAll("30", "60", "120", "Unlimited");
+    	framerate.setValue("Unlimited");
+    	optionsGrid.add(framerate, 1, row++);
+
+    	// View Bobbing
+    	optionsGrid.add(new Label("View Bobbing"), 0, row);
+    	CheckBox bobbing = new CheckBox();
+    	bobbing.setSelected(true);
+    	optionsGrid.add(bobbing, 1, row++);
+
+    	// Attack Indicator
+    	optionsGrid.add(new Label("Attack Indicator"), 0, row);
+    	ComboBox<String> attackInd = new ComboBox<>();
+    	attackInd.getItems().addAll("Crosshair", "Hotbar", "Off");
+    	attackInd.setValue("Crosshair");
+    	optionsGrid.add(attackInd, 1, row++);
+
+    	// Autosave Indicator
+    	optionsGrid.add(new Label("Autosave Indicator"), 0, row);
+    	CheckBox autosave = new CheckBox();
+    	autosave.setSelected(true);
+    	optionsGrid.add(autosave, 1, row++);
+
+    	// ===== BUTTONS =====
+    	HBox buttons = new HBox(10);
+    	buttons.setAlignment(Pos.CENTER_RIGHT);
+    	Button applyBtn = new Button("Apply");
+    	Button doneBtn = new Button("Done");
+    	buttons.getChildren().addAll(applyBtn, doneBtn);
+
+    	// ===== BUILD =====
+    	Tab generalTab = new Tab("General", new VBox(optionsGrid, buttons));
+    	generalTab.setClosable(false);
+    	
+    	// ===== SKIN TAB FULL =====
+
+    	// Container preview skins
+    	FlowPane skinContainer = new FlowPane();
+    	skinContainer.setPadding(new Insets(15));
+    	skinContainer.setHgap(20);
+    	skinContainer.setVgap(20);
+    	skinContainer.setPrefWrapLength(500);
+    	skinContainer.setAlignment(Pos.TOP_LEFT);
+    	skinContainer.setStyle("-fx-background-color: rgba(0,0,0,0.5)");
+
+    	// ScrollPane
+    	ScrollPane scrollPane = new ScrollPane(skinContainer);
+    	scrollPane.setFitToWidth(true);
+    	scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+    	scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+    	scrollPane.setStyle("-fx-background-color: transparent;");
+
+    	// Label tiêu đề
+    	Label skinTitle = new Label("Your Skins");
+    	skinTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white; -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.6), 2, 0, 1, 1);");
+
+    	// Nút Upload + Inject
+    	Button uploadBtn = new Button("Upload Skin");
+    	Button injectBtn = new Button("Inject Skin");
+    	HBox skinButtons = new HBox(10, uploadBtn, injectBtn);
+    	skinButtons.setAlignment(Pos.CENTER_RIGHT);
+    	skinButtons.setPadding(new Insets(5, 10, 10, 10));
+
+    	// VBox tổng layout tab
+    	VBox skinTabContent = new VBox(10, skinTitle, scrollPane, skinButtons);
+    	skinTabContent.setPadding(new Insets(10));
+    	skinTabContent.setStyle("-fx-background-color: rgba(50,50,50,0.4);");
+
+    	// ===== Load Skins 2D =====
+    	File skinsDir = new File(System.getProperty("user.home"), "AppData/Roaming/.luna/skins");
+    	File[] skinFiles = skinsDir.listFiles(f -> f.getName().endsWith(".png"));
+
+    	if (skinFiles != null) {
+    	    for (File skinFile : skinFiles) {
+    	        try {
+    	            Image skin = new Image(skinFile.toURI().toString());
+    	            ImageView front = buildMinecraftChar2DFront(skin);
+    	            ImageView back = buildMinecraftChar2DBack(skin);
+
+    	            front.setFitWidth(64 * 2);
+    	            front.setFitHeight(128 * 2);
+    	            front.setSmooth(false);
+    	            back.setFitWidth(64 * 2);
+    	            back.setFitHeight(128 * 2);
+    	            back.setSmooth(false);
+
+    	            HBox previews = new HBox(10, front, back);
+    	            previews.setAlignment(Pos.CENTER);
+
+    	            VBox skinBox = new VBox(5, previews, new Label(skinFile.getName()));
+    	            skinBox.setAlignment(Pos.CENTER);
+    	            skinBox.setStyle(
+    	                "-fx-background-color: rgba(255,255,255,0.05);" +
+    	                "-fx-background-radius: 10;" +
+    	                "-fx-padding: 10;" +
+    	                "-fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.5), 4, 0, 0, 2);"
+    	            );
+
+    	            // Hover effect
+    	            skinBox.setOnMouseEntered(e -> skinBox.setScaleX(1.05));
+    	            skinBox.setOnMouseEntered(e -> skinBox.setScaleY(1.05));
+    	            skinBox.setOnMouseExited(e -> skinBox.setScaleX(1.0));
+    	            skinBox.setOnMouseExited(e -> skinBox.setScaleY(1.0));
+
+    	            skinContainer.getChildren().add(skinBox);
+    	        } catch (Exception ex) {
+    	            ex.printStackTrace();
+    	        }
+    	    }
+    	}
+    	
+    	FileChooser fileChooser = new FileChooser();
+
+    	// ===== Select Skin Logic =====
+    	final Object[] selectedSkin = {null};
+    	skinContainer.getChildren().forEach(node -> {
+    	    node.setOnMouseClicked(ev -> {
+    	        skinContainer.getChildren().forEach(n -> n.setStyle(n.getStyle().replace("-fx-border-color: yellow;", "")));
+    	        node.setStyle(node.getStyle() + "-fx-border-color: yellow; -fx-border-width: 2;");
+    	        selectedSkin[0] = node;
+    	    });
+    	});
+
+    	injectBtn.setOnAction(ev -> {
+    	    try {
+    	        fileChooser.setTitle("Select a Minecraft Skin");
+    	        fileChooser.getExtensionFilters().add(
+    	                new FileChooser.ExtensionFilter("PNG Images", "*.png")
+    	        );
+
+    	        // Sử dụng tên biến khác
+    	        File skinFileDialog = fileChooser.showOpenDialog(injectBtn.getScene().getWindow());
+    	        if (skinFileDialog == null || !skinFileDialog.exists()) {
+    	            //showAlert("No skin selected", "Please select a skin to inject.");
+    	            return;
+    	        }
+
+    	        // Lưu vào biến global Object[]
+    	        selectedSkin[0] = skinFileDialog;
+
+    	        // Copy vào .luna/skins/
+    	        if (!skinsDir.exists()) skinsDir.mkdirs();
+
+    	        File targetSkin = new File(skinsDir, skinFileDialog.getName());
+    	        Files.copy(skinFileDialog.toPath(), targetSkin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+    	        // Tạo command line offline
+    	        List<String> commandLine = new ArrayList<>();
+    	        commandLine.add("--username"); commandLine.add("OfflinePlayer");
+    	        commandLine.add("--version");  commandLine.add("1.21");
+    	        commandLine.add("--gameDir");  commandLine.add(Main.defaultGamePath);
+    	        commandLine.add("--assetsDir");commandLine.add(new File(Main.defaultGamePath, "assets").getAbsolutePath());
+    	        commandLine.add("--offlineSkin"); commandLine.add(targetSkin.getAbsolutePath());
+
+    	        // Lưu vào config
+    	        LauncherConfig config = new LauncherConfig();
+    	        config.lastCommandLine = commandLine;
+    	        config.save();
+
+    	        //showAlert("Success", "Skin injected successfully!");
+    	    } catch (Exception ex) {
+    	        ex.printStackTrace();
+    	        //howAlert("Error", "Failed to inject skin: " + ex.getMessage());
+    	    }
+    	});
+
+    	// ===== Upload Skin Button =====
+    	uploadBtn.setOnAction(e -> {
+    	    fileChooser.setTitle("Select Skin PNG");
+    	    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Images", "*.png"));
+    	    File selectedFile = fileChooser.showOpenDialog(skinPage.getScene().getWindow());
+    	    if (selectedFile != null) {
+    	        try {
+    	            if (!skinsDir.exists()) skinsDir.mkdirs();
+    	            File dest = new File(skinsDir, selectedFile.getName());
+    	            java.nio.file.Files.copy(selectedFile.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+    	            // reload skins
+    	            skinContainer.getChildren().clear();
+    	            loadSkins2D(skinContainer); // hàm bạn đã viết
+    	        } catch (Exception ex) {
+    	            ex.printStackTrace();
+    	        }
+    	    }
+    	});
+
+    	// ===== Tạo Tab Skin =====
+    	Tab skinTab = new Tab("Skin", skinTabContent);
+    	skinTab.setClosable(false);
+
+
+    	String[] otherTabs = {"Performance", "Advanced", "Shader Packs..."};
+    	for (String t : otherTabs) {
+    	    tabPane.getTabs().add(new Tab(t, new Label("Coming soon...")));
+    	}
+
+    	tabPane.getTabs().add(0, generalTab); // gắn tab General vào đầu tiên
+    	tabPane.getTabs().add(1, skinTab);
+    	skinPage.getChildren().add(tabPane);
+
+
 
     	// --- Add pages to container ---
-    	pagesContainer.getChildren().addAll(homePage, authPage, missionsPage, modsPage, settingsPage, artistPage);
+    	pagesContainer.getChildren().addAll(homePage, authPage, missionsPage, modsPage, settingsPage, artistPage, skinPage);
     	showPage(pagesContainer, homePage);
 
     	layout.setCenter(pagesContainer);
@@ -835,17 +1514,64 @@ public class Main extends Application {
     	Button mods = new Button(I18n.get("menu.mods"));
     	mods.getStyleClass().add("menu-button");
     	mods.setOnAction(e -> showPage(pagesContainer, modsPage));
+    	
+    	Button skins = new Button("Skin");
+    	skins.getStyleClass().add("menu-button");
+    	skins.setOnAction(e -> showPage(pagesContainer, skinPage));
 
     	Button settings = new Button(I18n.get("menu.settings"));
     	settings.getStyleClass().add("menu-button");
     	settings.setOnAction(e -> showPage(pagesContainer, settingsPage));
 
-    	navBar.getChildren().addAll(home, accounts, missions, mods, settings);
+    	navBar.getChildren().addAll(home, accounts, missions, mods, skins, settings);
     	layout.setBottom(navBar);
 
     	// === Background Image ===
-    	String jsonUrl = "/backgrounds.json";
-    	
+    	// === Auto region background fetch ===
+    	String region = null;
+
+    	// thử lấy từ system property
+    	try {
+    	    region = System.getProperty("user.region");
+    	} catch (Exception ignored) {}
+
+    	// nếu null hoặc rỗng, fallback sang locale
+    	if (region == null || region.isBlank()) {
+    	    try {
+    	        region = Locale.getDefault().getCountry();
+    	    } catch (Exception ignored) {}
+    	}
+
+    	// fallback cuối cùng là VN
+    	if (region == null || region.isBlank()) {
+    	    region = "vn";
+    	}
+
+    	region = region.toLowerCase();
+
+    	String jsonUrl;
+
+    	// chọn URL tương ứng
+    	switch (region) {
+    	    case "jp":
+    	        jsonUrl = "/backgrounds_jp.json";
+    	        break;
+    	    case "ru":
+    	        jsonUrl = "/backgrounds_ru.json";
+    	        break;
+    	    case "us":
+    	        jsonUrl = "/backgrounds_us.json";
+    	        break;
+    	    case "kr":
+    	        jsonUrl = "/backgrounds_kr.json";
+    	        break;
+    	    default:
+    	        jsonUrl = "/backgrounds.json"; // mặc định (VN hoặc global)
+    	        break;
+    	}
+
+    	logInstance.info("[LunaLauncher] region=" + region);
+
     	BackgroundImage backgroundImage = null;
 
     	try {
@@ -865,46 +1591,221 @@ public class Main extends Application {
     	                false, false, true, true
     	            )
     	        );
-    	        layout.setBackground(new Background(backgroundImage));
+
+    	        layout.setStyle(
+    	            "-fx-background-image: url('" + bgUrl + "');" +
+    	            "-fx-background-repeat: no-repeat;" +
+    	            "-fx-background-position: center;" +
+    	            "-fx-background-size: cover;" +
+    	            "-fx-background-radius: 20;" +
+    	            "-fx-border-radius: 20;" +
+    	            "-fx-background-insets: 0;" +
+    	            "-fx-background-clip: padding;"
+    	        );
     	    }
     	} catch (Exception e) {
     	    e.printStackTrace();
     	}
 
-    	// === ROOT container bo góc ===
-    	root.setPadding(new Insets(8));
-    	root.setStyle("-fx-background-color: rgba(30,41,59,0.92); -fx-background-radius: 16; -fx-border-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 4);");
 
-    	Scene scene = new Scene(root, 1280, 720);
-    	scene.setFill(Color.TRANSPARENT);
-    	scene.getStylesheets().add(getClass().getResource("/application/application.css").toExternalForm());
+        root.setPadding(new Insets(8));
+        root.setStyle("-fx-background-color: rgba(30,41,59,0.92); -fx-background-radius: 16; -fx-border-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 4);");
 
-    	stage.initStyle(StageStyle.TRANSPARENT);
-    	stage.setScene(scene);
-    	stage.setTitle(I18n.get("app.title"));
-    	stage.show();
+        Scene scene = new Scene(root, 1280, 720);
+        scene.setFill(Color.TRANSPARENT);
+        scene.getStylesheets().add(getClass().getResource("/application/application.css").toExternalForm());
 
-    	root.setCache(true);
- 
-    	FadeTransition fade = new FadeTransition(Duration.millis(600), root);
-    	fade.setFromValue(0);
-    	fade.setToValue(1);
-    	fade.setInterpolator(Interpolator.EASE_BOTH);
+        // ==== Splash stage ====
+     // ==== Splash Stage setup ==== 
+        Stage splashStage = new Stage(StageStyle.TRANSPARENT);
+        StackPane splashRoot = new StackPane();
 
-    	ParallelTransition pt = new ParallelTransition(fade);
-    	pt.play();
+        // Background image
+        ImageView splashImg = new ImageView(new Image(getClass().getResource("/resources/loadbg.jpg").toExternalForm()));
+        splashImg.setFitWidth(400);
+        splashImg.setFitHeight(280);
+        splashImg.setPreserveRatio(true);
 
-    	addButtonAnimation(playButton);
-    	addButtonAnimation(accounts);
-    	addButtonAnimation(home);
-    	addButtonAnimation(missions);
-    	addButtonAnimation(mods);
-    	addButtonAnimation(settings);
-    	addButtonAnimation(minimize);
-    	addButtonAnimation(close);
+        // Status label
+        Label statusLabel = new Label("Starting...");
+        statusLabel.setTextFill(Color.CYAN);
+        statusLabel.setStyle("-fx-font-family: 'Comic Relief'; -fx-font-size: 13px;");
 
-    	this.showNotification(root, I18n.get("nof.expiredlicense"), 3000);
+        // Percent label
+        Label percentLabel = new Label("0%");
+        percentLabel.setTextFill(Color.CYAN);
+        percentLabel.setStyle("-fx-font-family: 'Comic Relief'; -fx-font-size: 13px;");
 
+        // HBox chứa status + %
+        HBox statusBox = new HBox(10, statusLabel, percentLabel);
+        statusBox.setAlignment(Pos.CENTER);
+
+        // Progress bounce bar
+        StackPane progressContainer = new StackPane();
+        progressContainer.setPrefSize(300, 10);
+        progressContainer.setStyle("-fx-background-color: #444;");
+        Rectangle bar = new Rectangle(60, 10, Color.CYAN);
+        progressContainer.getChildren().add(bar);
+        StackPane.setAlignment(progressContainer, Pos.BOTTOM_CENTER);
+        StackPane.setMargin(progressContainer, new Insets(0, 0, 10, 0));
+
+        // Bounce animation
+        Timeline bounce = new Timeline(
+                new KeyFrame(Duration.ZERO, new KeyValue(bar.translateXProperty(), -180)),
+                new KeyFrame(Duration.seconds(5), new KeyValue(bar.translateXProperty(), 180))
+        );
+        bounce.setCycleCount(Animation.INDEFINITE);
+        bounce.setAutoReverse(true);
+        bounce.play();
+
+        // VBox tổng
+        VBox splashBox = new VBox(20, splashImg, statusBox, progressContainer);
+        splashBox.setAlignment(Pos.CENTER);
+        splashRoot.getChildren().add(splashBox);
+
+        Scene splashScene = new Scene(splashRoot, 400, 290, Color.TRANSPARENT);
+        splashStage.setScene(splashScene);
+        splashStage.show();
+
+        // Căn giữa màn hình
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        splashStage.setX((screenBounds.getWidth() - splashStage.getWidth()) / 2);
+        splashStage.setY((screenBounds.getHeight() - splashStage.getHeight()) / 2);
+
+
+        // ==== Danh sách tiến trình động ==== 
+        List<Runnable> steps = Arrays.asList(
+        	    // B1: Kiểm tra rootDir
+        	    () -> {
+        	        Path rootDir = Paths.get(this.lunaDir);
+        	        if (!Files.exists(rootDir)) {
+        	            try {
+        	                Files.createDirectories(rootDir);
+        	                System.out.println("Created root directory: " + rootDir);
+        	            } catch (IOException e) {
+        	                e.printStackTrace();
+        	            }
+        	        }
+
+        	        // Kiểm tra config.json
+        	        Path config = rootDir.resolve("config.json");
+        	        if (!Files.exists(config)) {
+        	            try {
+        	                String defaultConfig = "{ \"lang\": \"en\", \"theme\": \"dark\" }";
+        	                Files.write(config, defaultConfig.getBytes(StandardCharsets.UTF_8));
+        	                System.out.println("Created default config.json");
+        	            } catch (IOException e) {
+        	                e.printStackTrace();
+        	            }
+        	        }
+        	    },
+
+        	    // B2: Giả lập fetch JSON metadata
+        	    () -> {
+        	        try {
+        	            logInstance.info("Fetching metadata...");
+        	            Thread.sleep(1000); // mô phỏng
+        	        } catch (InterruptedException e) {
+        	            e.printStackTrace();
+        	        }
+        	    },
+
+        	    // B3: Load config
+        	    () -> {
+        	        try {
+        	            logInstance.info("Loading configuration...");
+        	            Thread.sleep(800);
+        	        } catch (InterruptedException e) {
+        	            e.printStackTrace();
+        	        }
+        	    }
+        	);
+
+        	// ==== Task chạy lần lượt ====
+        	Task<Void> loadTask = new Task<>() {
+        	    @Override
+        	    protected Void call() throws Exception {
+        	        int totalSteps = steps.size();
+        	        for (int i = 0; i < totalSteps; i++) {
+        	            String stepName;
+        	            switch (i) {
+        	                case 0 -> stepName = "Checking root directory...";
+        	                case 1 -> stepName = "Fetching JSON metadata...";
+        	                case 2 -> stepName = "Loading configuration...";
+        	                default -> stepName = "Processing...";
+        	            }
+        	            updateMessage(stepName);
+
+        	            // Chạy code của bước đó
+        	            steps.get(i).run();
+
+        	            updateProgress(i + 1, totalSteps);
+        	        }
+        	        return null;
+        	    }
+        	};
+
+        	// Bind UI
+        	statusLabel.textProperty().bind(loadTask.messageProperty());
+        	loadTask.progressProperty().addListener((obs, oldVal, newVal) -> {
+        	    int percent = (int)(newVal.doubleValue() * 100);
+        	    percentLabel.setText(percent + "%");
+        	});
+
+        	// Chạy task trong thread nền
+        	new Thread(loadTask).start();
+
+
+        // Bind UI với Task
+        statusLabel.textProperty().bind(loadTask.messageProperty());
+        loadTask.progressProperty().addListener((obs, oldVal, newVal) -> {
+            int percent = (int)(newVal.doubleValue() * 100);
+            percentLabel.setText(percent + "%");
+        });
+
+        // Khi task hoàn tất
+        loadTask.setOnSucceeded(e -> {
+            FadeTransition fadeOut = new FadeTransition(Duration.seconds(1), splashRoot);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.0);
+            fadeOut.setOnFinished(ev -> {
+                splashStage.close();
+
+                // ==== Main Stage ====
+                stage.setScene(scene);
+                stage.initStyle(StageStyle.TRANSPARENT);
+                stage.setTitle(I18n.get("app.title"));
+                stage.show();
+
+                root.setCache(true);
+
+                FadeTransition fadeIn = new FadeTransition(Duration.millis(600), root);
+                fadeIn.setFromValue(0);
+                fadeIn.setToValue(1);
+                fadeIn.setInterpolator(Interpolator.EASE_BOTH);
+                fadeIn.play();
+
+                this.showNotification(root, I18n.get("nof.expiredlicense"), 3000);
+            });
+            fadeOut.play();
+        });
+
+        // Chạy task trong thread nền
+        new Thread(loadTask).start();
+
+
+
+        // ==== Animation buttons & notification ====
+        addButtonAnimation(playButton);
+        addButtonAnimation(accounts);
+        addButtonAnimation(home);
+        addButtonAnimation(missions);
+        addButtonAnimation(mods);
+        addButtonAnimation(skins);
+        addButtonAnimation(settings);
+        addButtonAnimation(minimize);
+        addButtonAnimation(close);
+        //addButtonAnimation(addSkinBtn);
     }
     
     private void showNotification(StackPane parent, String message, int durationMillis) {
@@ -1185,8 +2086,8 @@ public class Main extends Application {
         return versions;
     }
 
-    public static void main(String[] theNextWashingMachine) {
-    	System.out.println("Starting....");
+    public static void main(String[] theNextWashingMachine) throws Exception {
+    	logInstance.info("Starting....");
     	OptionParser parser = new OptionParser();
 
         parser.accepts("debug").withOptionalArg().ofType(Boolean.class);
@@ -1199,9 +2100,9 @@ public class Main extends Application {
         verbose = options.has("verbose");
         noSplash = options.has("nosplash");
 
-        if (debugMode) System.out.println("[DEBUG] Debug mode enabled");
-        if (verbose) System.out.println("[VERBOSE] Verbose logging enabled");
-        if (noSplash) System.out.println("[INFO] Splash screen disabled");
+        if (debugMode) logInstance.info("[DEBUG] Debug mode enabled");
+        if (verbose) logInstance.info("[VERBOSE] Verbose logging enabled");
+        if (noSplash) logInstance.info("[INFO] Splash screen disabled");
 
         launch(theNextWashingMachine); // JavaFX start()
     }

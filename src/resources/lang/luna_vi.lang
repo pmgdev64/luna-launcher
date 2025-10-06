@@ -28,7 +28,7 @@ accounts.loginorsignup=Đăng nhập / Đăng ký
 # === Alerts / Notifications ===
 alert.selectversion=Vui lòng chọn phiên bản trước khi chạy
 alert.launchfail=Không thể chạy phiên bản {0}. Lỗi: {1}
-nof.expiredlicense=Giấy phép của bạn đã hết hạn
+nof.expiredlicense=tết trung thu 2025
 nof.installcomplete=Cài đặt hoàn tất
 nof.installfailed=Cài đặt thất bại
 nof.launching=Đang khởi chạy...
@@ -112,4 +112,8 @@ natives.extract=Đang giải nén các thư viện.....
 assets.download=Đang tải các tệp Tài nguyên.....
 game.launching=Đang khởi chạy.....
 library.path=Đường dẫn Thư viện:  
-assets.path= Đường dẫn Tài nguyên: 
+assets.path=Đường dẫn Tài nguyên: 
+
+# === SettingPage ===
+settings.general=Chung
+settings.advanced=Nâng cao

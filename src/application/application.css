@@ -91,15 +91,36 @@
     -fx-text-fill: #f1f5f9;
 }
 
+/* CheckBox chung */
 .check-box {
-    -fx-text-fill: #e5e7eb;
-    -fx-cursor: hand;
+    -fx-text-fill: white;           /* chữ trắng */
+    -fx-font-size: 14px;
 }
 
-.check-box:selected .box {
-    -fx-background-color: #38bdf8;
-    -fx-border-color: #0ea5e9;
+/* Ô vuông CheckBox */
+.check-box .box {
+    -fx-background-color: rgba(255,255,255,0.1); /* nền mờ */
+    -fx-border-color: white;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-pref-width: 20px;
+    -fx-pref-height: 20px;
 }
+
+/* Hover */
+.check-box:hover .box {
+    -fx-background-color: rgba(255,255,255,0.2);
+}
+
+/* Checked */
+.check-box:selected .box {
+    -fx-background-color: rgba(255,255,255,0.3); /* nền mờ khi checked */
+    -fx-border-color: white;
+    -fx-background-size: 14px 14px;
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+}
+
 
 .slider {
     -fx-padding: 8 0;
@@ -178,3 +199,322 @@
     -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
+
+/* TabPane chung */
+/* TabPane chính */
+.tab-pane {
+    -fx-background-color: transparent; /* trong suốt hoàn toàn */
+}
+
+/* Header area */
+.tab-pane .tab-header-area {
+    -fx-background-color: rgba(50,50,50,0.4); /* nền mờ xám */
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+/* Header background (mặc định có 1 vùng trắng) */
+.tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+/* Content area */
+.tab-pane .tab-content-area {
+    -fx-background-color: rgba(50,50,50,0.4); /* nền mờ xám */
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+/* Tab chưa chọn */
+.tab-pane .tab {
+    -fx-background-radius: 8 8 0 0;
+    -fx-background-color: rgba(80,80,80,0.3);
+    -fx-text-base-color: white;
+    -fx-font-size: 14px;
+}
+
+/* Hover tab */
+.tab-pane .tab:hover {
+    -fx-background-color: rgba(255,255,255,0.1);
+}
+
+/* Tab được chọn */
+.tab-pane .tab:selected {
+    -fx-background-color: rgba(255,255,255,0.15);
+    -fx-font-weight: bold;
+}
+
+#bg-pane {
+    -fx-background-image: url("file:bg.jpg");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: center;
+    -fx-background-size: cover;
+
+    -fx-background-radius: 20;   /* bo góc */
+    -fx-border-radius: 20;       /* bo góc cho border nếu có */
+    -fx-background-clip: padding;
+}
+
+/* Toàn bộ ComboBox */
+.combo-box {
+    -fx-background-color: rgba(80, 80, 80, 0.4); /* xám mờ */
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-radius: 8;
+}
+
+/* Phần hiển thị text hiện tại */
+.combo-box .list-cell {
+    -fx-background-color: transparent; /* trong suốt để thấy nền mờ */
+    -fx-text-fill: white; /* chữ trắng */
+}
+
+/* Khi hover */
+.combo-box:hover {
+    -fx-background-color: rgba(120, 120, 120, 0.5);
+}
+
+/* Khi popup mở ra */
+.combo-box-popup .list-view {
+    -fx-background-color: rgba(70, 70, 70, 0.6); /* nền mờ của popup */
+    -fx-background-radius: 8;
+}
+
+/* Item trong danh sách */
+.combo-box-popup .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+.combo-box-popup .list-cell:hover {
+    -fx-background-color: rgba(255,255,255,0.2);
+}
+
+/* === LISTVIEW CƠ BẢN === */
+.list-view {
+    -fx-background-color: rgba(80, 80, 80, 0.35);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-border-radius: 10;
+    -fx-padding: 4;
+    -fx-control-inner-background: transparent;
+}
+
+/* === CÁC CELL BÊN TRONG === */
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 6 10 6 10;
+}
+
+/* Hover từng cell */
+.list-view .list-cell:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Cell được chọn */
+.list-view .list-cell:selected {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-text-fill: white;
+}
+
+/* Khi toàn bộ ListView được hover */
+.list-view:hover {
+    -fx-background-color: rgba(120, 120, 120, 0.4);
+}
+
+/* === SCROLL BAR === */
+/* === SCROLLBAR CHUNG (áp dụng cho ScrollPane, ListView, v.v.) === */
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical {
+    -fx-pref-width: 10px;
+}
+.scroll-bar:horizontal {
+    -fx-pref-height: 10px;
+}
+
+/* Track (nền của thanh cuộn) */
+.scroll-bar .track {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 8;
+}
+
+/* Thumb (phần kéo) */
+.scroll-bar .thumb {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.15), 6, 0, 0, 0);
+    -fx-cursor: hand;
+}
+
+/* Khi hover vào thumb */
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Khi nhấn giữ */
+.scroll-bar .thumb:pressed {
+    -fx-background-color: rgba(120, 180, 255, 0.6);
+}
+
+/* Buttons (ẩn 2 nút mũi tên đầu/cuối thanh cuộn) */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+/* Ẩn luôn arrow icon bên trong */
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* Bo viền toàn bộ scrollbar container để trông "mềm" hơn */
+.scroll-pane, .list-view {
+    -fx-background-color: rgba(60, 60, 60, 0.35);
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-border-radius: 10;
+}
+
+
+/* === HIỆU ỨNG FOCUS (viền sáng nhẹ khi được chọn) === */
+.list-view:focused {
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.15), 10, 0, 0, 0);
+}
+
+/* === MOD CARD TOÀN BỘ === */
+.mod-card {
+    -fx-background-color: rgba(50, 50, 50, 0.35);
+    -fx-background-radius: 12;
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-border-radius: 12;
+    -fx-padding: 12;
+    -fx-spacing: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 8, 0.2, 0, 0);
+    -fx-cursor: hand;
+    -fx-transition: 0.2s;
+}
+
+/* Hover card sáng nhẹ */
+.mod-card:hover {
+    -fx-background-color: rgba(80, 80, 80, 0.45);
+    -fx-border-color: rgba(255, 255, 255, 0.25);
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.1), 12, 0.3, 0, 0);
+}
+
+/* === TOP BAR === */
+.mod-card-topbar {
+    -fx-background-color: rgba(60, 60, 60, 0.5);
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+}
+
+/* === TEXT PHẦN MÔ TẢ === */
+.mod-card-title {
+    -fx-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.mod-card-desc {
+    -fx-fill: #cccccc;
+    -fx-font-size: 12px;
+}
+
+/* === AUTHOR === */
+.mod-card-author {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 12px;
+}
+
+.mod-card-author:hover {
+    -fx-text-fill: #ffffff;
+    -fx-underline: true;
+    -fx-cursor: hand;
+}
+
+/* === BOTTOM BAR === */
+.mod-card-bottombar {
+    -fx-background-color: rgba(50, 50, 50, 0.25);
+    -fx-background-radius: 8;
+    -fx-padding: 6 10 6 10;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+}
+
+/* === DOWNLOAD LABEL === */
+.mod-card-downloads {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 12px;
+}
+
+/* === INSTALL / DELETE BUTTON === */
+.mod-card-button {
+    -fx-background-color: rgba(100, 150, 255, 0.4);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 5 15 5 15;
+    -fx-border-color: rgba(255,255,255,0.25);
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+    -fx-transition: 0.2s;
+}
+.mod-card-button:hover {
+    -fx-background-color: rgba(120, 180, 255, 0.6);
+}
+
+/* Khi nút ở trạng thái Delete */
+.mod-card-button.delete {
+    -fx-background-color: rgba(255, 100, 100, 0.4);
+}
+.mod-card-button.delete:hover {
+    -fx-background-color: rgba(255, 100, 100, 0.6);
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.2);
+    -fx-border-radius: 8;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: rgba(80, 80, 80, 0.4); /* nền xám mờ */
+    -fx-background-radius: 8;
+}
+
+.scroll-pane .scroll-bar:vertical,
+.scroll-pane .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .thumb {
+    -fx-background-color: rgba(255, 255, 255, 0.3);
+    -fx-background-radius: 4;
+}
+
+.scroll-pane .thumb:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.5);
+}
+
+.scroll-pane .increment-button,
+.scroll-pane .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+
+
+
+
