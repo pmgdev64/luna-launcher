@@ -1,3 +1,7 @@
+<div align = "center">
+  <img src = "banner.png" alt = "show the banner">
+</div>
+
 # Luna Launcher
 
 A lightweight, clean and secure Minecraft launcher.
