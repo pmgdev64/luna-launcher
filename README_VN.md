@@ -6,7 +6,7 @@
 
 **Chủ đề:** `earlyWinter`  
 **Ngày phát hành:** 26/10/2025  
-**Tác giả:** PmgDev64 / Tsukumo Takeshi  
+**Tác giả:** PmgDev64 / PepperMCGamers Ch. PmgTeam  
 
 Trình khởi chạy Minecraft nhẹ, sạch, hiện đại với giao diện phong cách anime học viện.
 
