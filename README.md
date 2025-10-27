@@ -54,3 +54,7 @@ A lightweight, clean, and modern Minecraft launcher with anime-inspired UI.
 ```bash
 git clone https://github.com/pmgdev64/luna-launcher.git
 cd luna-launcher
+```
+
+---
+[![Star History Chart](https://api.star-history.com/svg?repos=pmgdev64/luna-launcher&type=date&legend=top-left)](https://www.star-history.com/#pmgdev64/luna-launcher&type=date&legend=top-left)
