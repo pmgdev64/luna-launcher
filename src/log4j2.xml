@@ -3,7 +3,7 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout disableAnsi="false" noConsoleNoAnsi="false"
-                pattern="[%d{HH:mm:ss}] [%t/%highlight{%-4level}{FATAL=red bold, ERROR=red, WARN=yellow, INFO=cyan, DEBUG=white, TRACE=cyan}]: %msg%n"/>
+                pattern="%style{[%d{HH:mm:ss}]}{cyan} %style{[%t]}{green} %highlight{%-5level}{FATAL=red bold, ERROR=red, WARN=yellow bold, INFO=blue, DEBUG=white, TRACE=bright_black} %style{[LunaLauncher]}{magenta} : %msg%n"/>
         </Console>
     </Appenders>
 

@@ -1,8 +1,8 @@
 # === App ===
-app.title=Luna Launcher (Vietnamese)
+app.title=Luna Launcher (Tiếng Việt)
 
 # === Overlay ===
-overlay.load=Game đang chạy, không thể thao tác....
+overlay.load=Trò chơi đang chạy, không thể thao tác...
 
 # === Window Controls ===
 window.minimize=_
@@ -12,51 +12,52 @@ window.close=X
 menu.play=Chạy
 menu.selectversion=Chọn phiên bản
 menu.installandplay=Cài đặt & Chạy
-menu.playdemo=Chạy Bản Chơi thử
-menu.installandplaydemo=Cài đặt & Chạy bản Chơi thử
-menu.playlegacy=Chạy Phiên bản Cũ
-menu.installandplaylegacy=Cài đặt & Chạy Phiên bản Cũ
+menu.playdemo=Chạy bản demo
+menu.installandplaydemo=Cài đặt & Chạy bản demo
+menu.playlegacy=Chạy bản cũ
+menu.installandplaylegacy=Cài đặt & Chạy bản cũ
 menu.home=Trang chủ
 menu.accounts=Tài khoản
 menu.missions=Nhiệm vụ
-menu.mods=Mods
+menu.mods=Mod
 menu.settings=Cài đặt
 
 # === Accounts ===
-accounts.loginorsignup=Đăng nhập / Đăng ký
+accounts.loginorsignup=Đăng nhập / Đăng ký tài khoản
 
 # === Alerts / Notifications ===
 alert.selectversion=Vui lòng chọn phiên bản trước khi chạy
 alert.launchfail=Không thể chạy phiên bản {0}. Lỗi: {1}
-nof.expiredlicense=tết trung thu 2025
+alert.restartneeded=Khởi động lại ứng dụng để áp dụng thay đổi
+nof.expiredlicense=Chỉ còn vài tháng nữa là hết năm 2025
 nof.installcomplete=Cài đặt hoàn tất
 nof.installfailed=Cài đặt thất bại
 nof.launching=Đang khởi chạy...
 
 # === Missions ===
-missions.m1=Nhiệm vụ 1: Cài đặt game thành công
+missions.m1=Nhiệm vụ 1: Cài đặt trò chơi thành công
 missions.m2=Nhiệm vụ 2: Đăng nhập tài khoản
-missions.m3=Nhiệm vụ 3: Chạy game không lỗi
+missions.m3=Nhiệm vụ 3: Chạy trò chơi không lỗi
 
 # === Mods ===
 mods.search=Tìm kiếm...
 mods.searchbtn=Tìm
 mods.category=Thể loại
 mods.category.all=Tất cả
-mods.category.utility=Tiện ích
-mods.category.performance=Tối ưu hiệu suất
+mods.category.utility=Công cụ
+mods.category.performance=Tối ưu hiệu năng
 mods.category.tech=Công nghệ
-mods.category.magic=Phép thuật
-mods.installed=Mods đã cài
+mods.category.magic=Ma thuật
+mods.installed=Mod đã cài
 mods.install=Cài đặt
 mods.delete=Gỡ bỏ
 mods.desc=Mô tả mod: {0}
-mods.downloads=Lượt tải: {0}
+mods.downloads=Lượt tải:
 
 # === Settings ===
-settings.gamepath=Đường dẫn game:
+settings.gamepath=Đường dẫn trò chơi:
 settings.browse=Duyệt...
-settings.selectfolder=Chọn thư mục game
+settings.selectfolder=Chọn thư mục trò chơi
 settings.cancel=Hủy
 settings.autoupdate=Tự động cập nhật
 settings.theme=Giao diện
@@ -65,55 +66,57 @@ settings.theme.dark=Tối
 settings.theme.system=Theo hệ thống
 settings.save=Lưu cài đặt
 settings.saved=Đã lưu cài đặt
-settings.path=Đường dẫn: 
+settings.path=Đường dẫn:
+settings.language=Ngôn ngữ:
 
 # === Errors ===
 error.invalidcredentials=Tài khoản hoặc mật khẩu không hợp lệ
 error.network=Lỗi mạng, vui lòng kiểm tra kết nối
-error.missinggamepath=Chưa cấu hình đường dẫn game
+error.missinggamepath=Chưa cấu hình đường dẫn trò chơi
 error.unsupported=Phiên bản này không được hỗ trợ
-error.unknown=Xảy ra lỗi không xác định
+error.unknown=Đã xảy ra lỗi không xác định
 
 loading.title=Đang tải
 
 # === Login ===
-login.title=Chọn các mục đăng nhập
+login.title=Chọn phương thức đăng nhập
 offline.username=Tên người dùng
 offline.mode=Chế độ ngoại tuyến
 offline.title=Ngoại tuyến
 local.title=Nội bộ
-yourauth.title=Ten_auth
+yourauth.title=Tên Auth
 microsoft.title=Microsoft
 offline.loginbutton=Đăng nhập (Ngoại tuyến)
-login.cancel=Hủy bỏ
-local.auth=Chế độ Nội bộ 
+login.cancel=Hủy
+local.auth=Chế độ nội bộ
 local.username=Tên người dùng
 local.password=Mật khẩu
 local.login=Đăng nhập (Nội bộ)
-yourauth.mode=[Tên Auth Ở đây]
-yourauth.username=Tên người dùng (Ten_auth)
-yourauth.password=Mật khẩu (Ten_auth)
-yourauth.login=Đăng nhập ([Tên auth ở đây])
+yourauth.mode=[Tên Auth]
+yourauth.username=Tên người dùng ({0})
+yourauth.password=Mật khẩu ({0})
+yourauth.login=Đăng nhập ({0})
 microsoft.login=Đăng nhập với Microsoft
-microsoft.noavailable=Chưa có tính năng này
+microsoft.noavailable=Tính năng này chưa khả dụng
 
 # === OpenFile ===
 openfile.title=Chọn thư mục
 openfile.back=Quay lại
-openfile.forward=Đi tiếp
-openfile.up=Đi lên
+openfile.forward=Tiến tới
+openfile.up=Lên một cấp
 
 # === LoadingScreen ===
-legacy.loading=Đang khởi chạy phiên bản cũ.....
-version.metadata=Đang tải các Tệp dữ liệu của Phiên bản.....
-client.jarfile=Đang tải Tệp Thực thi Của Client.....
-libraries.download=Đang tải các thư viện cần thiết.....
-natives.extract=Đang giải nén các thư viện.....
-assets.download=Đang tải các tệp Tài nguyên.....
-game.launching=Đang khởi chạy.....
-library.path=Đường dẫn Thư viện:  
-assets.path=Đường dẫn Tài nguyên: 
+legacy.loading=Đang khởi chạy bản cũ...
+version.metadata=Đang tải dữ liệu phiên bản...
+client.jarfile=Đang tải tệp thực thi trò chơi...
+libraries.download=Đang tải thư viện cần thiết...
+natives.extract=Đang giải nén thư viện...
+assets.download=Đang tải tệp tài nguyên...
+game.launching=Đang khởi chạy...
+library.path=Thư mục thư viện:
+assets.path=Thư mục tài nguyên:
 
 # === SettingPage ===
 settings.general=Chung
 settings.advanced=Nâng cao
+settings.about=Giới thiệu

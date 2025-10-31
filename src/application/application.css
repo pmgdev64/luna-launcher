@@ -48,8 +48,12 @@
 
 /* === Navigation bar === */
 .nav-bar {
-    -fx-background-color: rgba(15,23,42,0.6);
+    -fx-background-color: linear-gradient(to bottom, rgba(230,240,255,0.6), rgba(180,200,230,0.45));
     -fx-background-radius: 12;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(255,255,255,0.15), 10, 0.4, 0, 2);
 }
 
 .menu-button {
@@ -163,8 +167,8 @@
 /* === Default Buttons === */
 .button {
     -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
-    -fx-background-radius: 10;
-    -fx-border-radius: 10;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
     -fx-border-color: rgba(255,255,255,0.15);
     -fx-border-width: 1;
     -fx-text-fill: #f3f4f6;
@@ -515,6 +519,165 @@
 }
 
 
+/* =================================================================
+   A. GLOBAL/ROOT STYLES (Cho homePage VBox)
+   ================================================================= */
+
+/* Container gốc - Đặt hình nền lớn và nền tối */
+.startup-screen-root {
+    /* 1. Thay đổi path này bằng hình nền của bạn */
+    -fx-background-image: url('images/background-luna.jpg'); 
+    -fx-background-size: cover; 
+    -fx-background-position: center center;
+    -fx-background-color: #1a1a1a; /* Màu nền tối khi hình nền chưa load */
+}
+
+/* Đảm bảo các container con (HBox, VBox) trong suốt để hình nền hiển thị qua */
+.root-container,
+.header-box,
+.bottom-box,
+.version-info-box,
+.bottom-left-controls,
+.touch-to-start-box {
+    -fx-background-color: transparent;
+}
 
 
+/* =================================================================
+   B. TOP SECTION (LOGO & INFO)
+   ================================================================= */
 
+/* Logo Launcher (Góc trên trái) */
+.logo-text {
+    -fx-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0.0, 0, 1); /* Bóng nhẹ */
+}
+
+/* Văn bản thông tin UID/Version (góc trên phải) */
+.info-text-small {
+    -fx-fill: white;
+    -fx-font-size: 12px;
+    -fx-opacity: 0.7; /* Hơi mờ */
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+
+/* =================================================================
+   C. BOTTOM SECTION (CONTROLS & PLAY BUTTON)
+   ================================================================= */
+
+/* Văn bản "TOUCH TO START" (Nút Play chính) */
+.touch-to-start-text {
+    -fx-fill: white;
+    -fx-font-size: 26px; /* Kích thước lớn, nổi bật */
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-cursor: hand;
+    /* Có thể thêm Animation (flicker/pulse) bằng code JavaFX để nhấp nháy */
+}
+.touch-to-start-text:hover {
+    -fx-fill: #b3e5fc; /* Màu sáng hơn khi hover */
+}
+
+/* ComboBox Chọn phiên bản (Tối giản hóa) */
+.version-select-overlay {
+    -fx-background-color: transparent;
+    -fx-border-color: white;
+    -fx-border-width: 0 0 1px 0; /* Gạch chân mỏng */
+    -fx-font-size: 14px;
+    -fx-text-fill: white;
+    -fx-opacity: 0.9;
+}
+/* Màu nền cho ListBox khi ComboBox mở ra */
+.version-select-overlay .list-cell {
+    -fx-background-color: #2c2c2c;
+    -fx-text-fill: white;
+    -fx-padding: 5px 10px;
+}
+/* Ẩn mũi tên ComboBox để trông gọn gàng hơn */
+.version-select-overlay .arrow-button {
+    -fx-background-color: transparent;
+}
+.version-select-overlay .arrow {
+    -fx-background-color: white;
+    -fx-opacity: 0.7;
+}
+
+
+/* Nút Menu và Switch Account (Góc dưới trái) */
+.menu-overlay-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-alignment: center-left;
+    -fx-padding: 5px 0 5px 0;
+    -fx-cursor: hand;
+}
+.menu-overlay-button:hover {
+    -fx-text-fill: #b3e5fc; /* Màu nổi bật khi hover */
+}
+.menu-overlay-button-small {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-opacity: 0.8; 
+    -fx-alignment: center-left;
+    -fx-padding: 2px 0 2px 0;
+    -fx-cursor: hand;
+}
+.menu-overlay-button-small:hover {
+    -fx-opacity: 1.0;
+    -fx-text-fill: #b3e5fc;
+}
+
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #333333;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.now-playing-box {
+    -fx-background-radius: 10;
+    -fx-background-color: linear-gradient(to right, #FF4E50, #F9D423); /* đỏ→vàng */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4,0,0,2);
+}
+
+.now-playing-title {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.play-pause-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14;
+    -fx-cursor: hand;
+}
+
+.dialog-button {
+    -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: rgba(255,255,255,0.15);
+    -fx-border-width: 1;
+    -fx-text-fill: #f3f4f6;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+    -fx-padding: 1 10;
+    -fx-pref-width: 10px;   /* chiều ngang */
+    -fx-pref-height: 10px;   /* chiều dọc */
+    -fx-transition: all 0.25s ease-in-out;
+}
+
+.dialog-button:hover {
+    -fx-text-fill: #ffffff;
+}
+
+.dialog-button:pressed {
+    -fx-background-color: rgba(56,189,248,0.5);
+    -fx-text-fill: #ffffff;
+}

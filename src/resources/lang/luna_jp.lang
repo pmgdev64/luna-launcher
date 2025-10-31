@@ -1,0 +1,122 @@
+# === App ===
+app.title=Luna Launcher（日本語）
+
+# === Overlay ===
+overlay.load=ゲームが実行中のため、操作できません...
+
+# === Window Controls ===
+window.minimize=_
+window.close=X
+
+# === Menu ===
+menu.play=起動
+menu.selectversion=バージョンを選択
+menu.installandplay=インストールして起動
+menu.playdemo=デモを起動
+menu.installandplaydemo=デモをインストールして起動
+menu.playlegacy=旧バージョンを起動
+menu.installandplaylegacy=旧バージョンをインストールして起動
+menu.home=ホーム
+menu.accounts=アカウント
+menu.missions=ミッション
+menu.mods=MOD
+menu.settings=設定
+
+# === Accounts ===
+accounts.loginorsignup=ログイン / サインアップ
+
+# === Alerts / Notifications ===
+alert.selectversion=起動前にバージョンを選択してください
+alert.launchfail=バージョン {0} を起動できません。エラー: {1}
+alert.restartneeded=変更を適用するにはアプリを再起動してください
+nof.expiredlicense=2025年の終了まであと数か月です
+nof.installcomplete=インストールが完了しました
+nof.installfailed=インストールに失敗しました
+nof.launching=起動中...
+
+# === Missions ===
+missions.m1=ミッション1：ゲームを正常にインストール
+missions.m2=ミッション2：アカウントにログイン
+missions.m3=ミッション3：エラーなしでゲームを起動
+
+# === Mods ===
+mods.search=検索...
+mods.searchbtn=検索
+mods.category=カテゴリー
+mods.category.all=すべて
+mods.category.utility=ユーティリティ
+mods.category.performance=パフォーマンス最適化
+mods.category.tech=テクノロジー
+mods.category.magic=マジック
+mods.installed=インストール済みのMOD
+mods.install=インストール
+mods.delete=削除
+mods.desc=MODの説明: {0}
+mods.downloads=ダウンロード数:
+
+# === Settings ===
+settings.gamepath=ゲームのパス:
+settings.browse=参照...
+settings.selectfolder=ゲームフォルダを選択
+settings.cancel=キャンセル
+settings.autoupdate=自動更新
+settings.theme=テーマ
+settings.theme.light=ライト
+settings.theme.dark=ダーク
+settings.theme.system=システムに従う
+settings.save=設定を保存
+settings.saved=設定を保存しました
+settings.path=パス:
+settings.language=言語:
+
+# === Errors ===
+error.invalidcredentials=アカウントまたはパスワードが無効です
+error.network=ネットワークエラー。接続を確認してください
+error.missinggamepath=ゲームのパスが設定されていません
+error.unsupported=このバージョンはサポートされていません
+error.unknown=不明なエラーが発生しました
+
+loading.title=読み込み中
+
+# === Login ===
+login.title=ログイン方法を選択
+offline.username=ユーザー名
+offline.mode=オフラインモード
+offline.title=オフライン
+local.title=ローカル
+yourauth.title=認証名
+microsoft.title=Microsoft
+offline.loginbutton=ログイン（オフライン）
+login.cancel=キャンセル
+local.auth=ローカルモード
+local.username=ユーザー名
+local.password=パスワード
+local.login=ログイン（ローカル）
+yourauth.mode=[認証名]
+yourauth.username=ユーザー名 ({0})
+yourauth.password=パスワード ({0})
+yourauth.login=ログイン ({0})
+microsoft.login=Microsoftでログイン
+microsoft.noavailable=この機能はまだ利用できません
+
+# === OpenFile ===
+openfile.title=フォルダを選択
+openfile.back=戻る
+openfile.forward=進む
+openfile.up=上の階層へ
+
+# === LoadingScreen ===
+legacy.loading=旧バージョンを起動中...
+version.metadata=バージョンデータを読み込み中...
+client.jarfile=クライアント実行ファイルを読み込み中...
+libraries.download=必要なライブラリを読み込み中...
+natives.extract=ライブラリを展開中...
+assets.download=アセットファイルを読み込み中...
+game.launching=起動中...
+library.path=ライブラリのパス:
+assets.path=アセットのパス:
+
+# === SettingPage ===
+settings.general=一般
+settings.advanced=詳細
+settings.about=情報

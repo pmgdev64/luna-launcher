@@ -1,6 +1,7 @@
 package application;
 
 import javafx.animation.Animation;
+import javafx.animation.AnimationTimer;
 import javafx.animation.FadeTransition;
 import javafx.animation.SequentialTransition;
 import javafx.animation.Interpolator;
@@ -13,6 +14,7 @@ import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Application;
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -23,12 +25,17 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.CacheHint;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.SubScene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.control.skin.ComboBoxListViewSkin;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelReader;
@@ -42,6 +49,7 @@ import javafx.scene.shape.MeshView;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.TriangleMesh;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.stage.FileChooser;
@@ -50,21 +58,8 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
-import vn.pmgteam.kclient.ConfigManager;
-import vn.pmgteam.kclient.I18n;
-import vn.pmgteam.kclient.LauncherConfig;
-import vn.pmgteam.kclient.LoadingGui;
-import vn.pmgteam.kclient.LunarCalendar;
-import vn.pmgteam.kclient.MessageBox;
-import vn.pmgteam.kclient.OpenFileBox;
-import vn.pmgteam.kclient.UserProfile;
-import vn.pmgteam.kclient.LunarDate;
-import vn.pmgteam.kclient.MinecraftLauncher;
-import vn.pmgteam.kclient.MinecraftSkinViewer;
-import vn.pmgteam.kclient.NofiticationBox;
-import vn.pmgteam.kclient.auth.AuthManager;
-import vn.pmgteam.kclient.auth.LoginAuthBox;
 
+import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -72,8 +67,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.annotation.Annotation;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -83,10 +80,15 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.function.Function;
+import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 
@@ -95,9 +97,29 @@ import org.json.JSONObject;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import vn.pmgteam.luna.ConfigManager;
+import vn.pmgteam.luna.I18n;
+import vn.pmgteam.luna.LauncherConfig;
+import vn.pmgteam.luna.LoadingGui;
+import vn.pmgteam.luna.LunarCalendar;
+import vn.pmgteam.luna.LunarDate;
+import vn.pmgteam.luna.MessageBox;
+import vn.pmgteam.luna.MinecraftLauncher;
+import vn.pmgteam.luna.MinecraftSkinViewer;
+import vn.pmgteam.luna.NofiticationBox;
+import vn.pmgteam.luna.NowPlayingDialog;
+import vn.pmgteam.luna.OpenFileBox;
+import vn.pmgteam.luna.OverlayConfig;
+import vn.pmgteam.luna.UIPackLoader;
+import vn.pmgteam.luna.UiPackFiles;
+import vn.pmgteam.luna.UserProfile;
+import vn.pmgteam.luna.auth.AuthManager;
+import vn.pmgteam.luna.auth.LoginAuthBox;
+import vn.pmgteam.luna.util.UpdateInfo;
 
 import com.luciad.imageio.webp.*;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -147,7 +169,7 @@ public class Main extends Application {
         return jar.exists() && json.exists();
     }
     
-    private void showOverlay() {
+    public final void showOverlay() {
         overlay.setVisible(true);
         FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
         fadeIn.setFromValue(0);
@@ -502,12 +524,15 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
 
-    	I18n.load(getClass(), "luna", new Locale("vi"));
+    	// 1. Tải ngôn ngữ dựa trên config đã lưu
     	// Load config
     	configManager = new ConfigManager();
     	cfg = configManager.getConfig();
     	selectedGamePath = cfg.gamePath; // sử dụng gamePath đã lưu
-
+    	
+        // Đảm bảo cfg.language đã được định nghĩa trong LauncherConfig (mặc định "vi")
+        String langCode = (cfg.language != null && !cfg.language.isEmpty()) ? cfg.language : "vi";
+        I18n.load(getClass(), "luna", new Locale(langCode));
 
     	// === Khởi tạo Image icon đúng cách ===
     	titleIcon = new Image(getClass().getResource("/resources/icons.png").toExternalForm());
@@ -843,21 +868,21 @@ public class Main extends Application {
         topListBar.setAlignment(Pos.CENTER_LEFT);
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Search mods...");
+        searchField.setPromptText(I18n.get("mods.search"));
         searchField.setPrefWidth(200);
 
-        Button searchBtn = new Button("Search");
+        Button searchBtn = new Button(I18n.get("mods.searchbtn"));
 
         ComboBox<String> categoryBox = new ComboBox<>();
-        categoryBox.getItems().addAll("All", "Utility", "Performance", "Tech", "Magic");
+        categoryBox.getItems().addAll(I18n.get("mods.category.all"), I18n.get("mods.category.utility"), I18n.get("mods.category.performance"), I18n.get("mods.category.tech"), I18n.get("mods.category.magic"));
         categoryBox.setValue("All");
 
-        topListBar.getChildren().addAll(searchField, searchBtn, new Label("Category"), categoryBox);
+        topListBar.getChildren().addAll(searchField, searchBtn, new Label(I18n.get("mods.category")), categoryBox);
 
         VBox installedBox = new VBox(8);
         installedBox.setPrefWidth(200);
 
-        Text installedTitle = new Text("Installed Mods");
+        Text installedTitle = new Text(I18n.get("mods.installed"));
         installedTitle.setStyle("-fx-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;");
 
         ListView<String> installedMods = new ListView<>();
@@ -957,16 +982,16 @@ public class Main extends Application {
             HBox bottomBar = new HBox(10);
             bottomBar.setAlignment(Pos.CENTER_LEFT);
 
-            Label downloads = new Label("Downloads: " + mod.optInt("downloads", 0));
+            Label downloads = new Label(I18n.get("mods.downloads") + mod.optInt("downloads", 0));
             downloads.setStyle("-fx-text-fill: #aaaaaa;");
 
-            Button installBtn = new Button(installedMods.getItems().contains(mod.getString("title")) ? "Delete" : "Install");
+            Button installBtn = new Button(installedMods.getItems().contains(mod.getString("title")) ? I18n.get("mods.delete") : I18n.get("mods.install"));
             installBtn.setOnAction(e -> {
                 String modName = mod.getString("title");
 
                 if (!installedMods.getItems().contains(modName)) {
                     installedMods.getItems().add(modName);
-                    installBtn.setText("Delete");
+                    installBtn.setText(I18n.get("mods.delete"));
 
                     // --- Download mod in background ---
                     new Thread(() -> {
@@ -978,26 +1003,20 @@ public class Main extends Application {
                                 String versionId = versions.getString(0);
                                 downloadMod(projectId, versionId); // Tải về mods/
                                 Platform.runLater(() -> {
-                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                                    alert.setHeaderText("Mod Installed");
-                                    alert.setContentText(modName + " đã được tải về thư mục mods/");
-                                    alert.show();
+                                    MessageBox.showAlert(modName + " đã được tải về thư mục mods/");
                                 });
                             }
                         } catch (Exception ex) {
                             ex.printStackTrace();
                             Platform.runLater(() -> {
-                                Alert alert = new Alert(Alert.AlertType.ERROR);
-                                alert.setHeaderText("Download Failed");
-                                alert.setContentText("Không thể tải mod: " + modName);
-                                alert.show();
+                                MessageBox.showError("Không thể tải mod: " + modName);
                             });
                         }
                     }).start();
 
                 } else {
                     installedMods.getItems().remove(modName);
-                    installBtn.setText("Install");
+                    installBtn.setText(I18n.get("mods.install"));
 
                     // --- Delete mod file from mods/ ---
                     Path modsDir = Paths.get("mods");
@@ -1096,7 +1115,8 @@ public class Main extends Application {
         });
 
 
-        // ===== GENERAL TAB =====
+     // ===== GENERAL TAB =====
+     // === General Settings Tab ===
         GridPane generalSettingsGrid = new GridPane();
         generalSettingsGrid.setHgap(20);
         generalSettingsGrid.setVgap(10);
@@ -1105,32 +1125,46 @@ public class Main extends Application {
 
         int rowGeneral = 0;
 
-        // Game Path
+        // === Game Path ===
         generalSettingsGrid.add(new Label(I18n.get("settings.gamepath")), 0, rowGeneral);
-        TextField gamePathField = new TextField(defaultGamePath);
+
+        // Đảm bảo sử dụng selectedGamePath/cfg.gamePath
+        TextField gamePathField = new TextField(selectedGamePath);
         gamePathField.setPrefWidth(350);
         generalSettingsGrid.add(gamePathField, 1, rowGeneral++);
+
         Button browseBtn = new Button(I18n.get("settings.browse"));
         generalSettingsGrid.add(browseBtn, 2, rowGeneral - 1);
 
         browseBtn.setOnAction(e -> {
-            OpenFileBox.show(I18n.get("settings.selectfolder"), new File(System.getProperty("user.home")), selected -> {
-                if (selected != null) {
-                    selectedGamePath = selected.getAbsolutePath();
-                    gamePathField.setText(selectedGamePath);
-                    versionSelect.getItems().clear();
-                    versionSelect.getItems().addAll(loadMinecraftVersions(selectedGamePath));
+            OpenFileBox.show(
+                I18n.get("settings.selectfolder"),
+                new File(System.getProperty("user.home")),
+                selected -> {
+                    if (selected != null) {
+                        selectedGamePath = selected.getAbsolutePath();
+                        gamePathField.setText(selectedGamePath);
+                        versionSelect.getItems().clear();
+                        versionSelect.getItems().addAll(minecraftLauncher.fetchAvailableVersions());
+                    }
                 }
-            });
+            );
+        });
+        
+        Button nowPlayingBtn = new Button(I18n.get("settings.nowPlaying"));
+        generalSettingsGrid.add(nowPlayingBtn, 4, rowGeneral + 1);
+        
+        nowPlayingBtn.setOnAction(e -> {
+        	NowPlayingDialog.show("?", "?", "?");
         });
 
-        // Auto Update
+        // === Auto Update ===
         generalSettingsGrid.add(new Label(I18n.get("settings.autoupdate")), 0, rowGeneral);
         CheckBox autoUpdate = new CheckBox();
         autoUpdate.setSelected(cfg.autoUpdate);
         generalSettingsGrid.add(autoUpdate, 1, rowGeneral++);
 
-        // Theme
+        // === Theme Selection ===
         generalSettingsGrid.add(new Label(I18n.get("settings.theme")), 0, rowGeneral);
         ComboBox<String> themeSelect = new ComboBox<>();
         themeSelect.getItems().addAll(
@@ -1138,14 +1172,37 @@ public class Main extends Application {
             I18n.get("settings.theme.dark"),
             I18n.get("settings.theme.system")
         );
-
         themeSelect.setValue(cfg.theme);
-        
         this.apply(themeSelect);
-        
         generalSettingsGrid.add(themeSelect, 1, rowGeneral++);
 
-        // Buttons
+        // ------------------------------------------------------------------
+        // === Language Selection ===
+        // ------------------------------------------------------------------
+        generalSettingsGrid.add(new Label(I18n.get("settings.language")), 0, rowGeneral);
+
+        ComboBox<String> languageSelect = new ComboBox<>();
+        // Ngôn ngữ hiển thị (tên - mã)
+        languageSelect.getItems().addAll(
+            "Tiếng Việt (vi)",
+            "English (en)",
+            "日本語 (jp)" // ← Thêm tiếng Nhật
+        );
+
+        // Lấy ngôn ngữ hiện tại từ config
+        String currentLangCode = cfg.language != null ? cfg.language : "vi";
+        String currentLangName = languageSelect.getItems().stream()
+            .filter(item -> item.endsWith("(" + currentLangCode + ")"))
+            .findFirst()
+            .orElse("Tiếng Việt (vi)");
+
+        languageSelect.setValue(currentLangName);
+        this.apply(languageSelect);
+        generalSettingsGrid.add(languageSelect, 1, rowGeneral++);
+
+        // ------------------------------------------------------------------
+        // === Save Button ===
+        // ------------------------------------------------------------------
         HBox saveBox = new HBox(10);
         saveBox.setAlignment(Pos.CENTER_RIGHT);
         Button saveBtn = new Button(I18n.get("settings.save"));
@@ -1156,24 +1213,58 @@ public class Main extends Application {
             cfg.autoUpdate = autoUpdate.isSelected();
             cfg.theme = themeSelect.getValue();
 
-            configManager.save();
-            this.showNotification(root, I18n.get("settings.saved"), 2000);
+            // --- Xử lý ngôn ngữ ---
+            String selectedLang = languageSelect.getValue();
+            String newLangCode = "vi";
 
+            if (selectedLang != null && selectedLang.contains("(")) {
+                try {
+                    // Lấy mã ngôn ngữ (vd: "vi" từ "Tiếng Việt (vi)")
+                    newLangCode = selectedLang.substring(
+                        selectedLang.indexOf('(') + 1,
+                        selectedLang.indexOf(')')
+                    );
+                } catch (Exception ex) {
+                    // Bỏ qua nếu lỗi
+                }
+            }
+
+            boolean languageChanged = !newLangCode.equals(cfg.language);
+            cfg.language = newLangCode;
+
+            configManager.save();
+
+            // Làm mới danh sách phiên bản
             versionSelect.getItems().clear();
-            versionSelect.getItems().addAll(loadMinecraftVersions(cfg.gamePath));
+            versionSelect.getItems().addAll(minecraftLauncher.fetchAvailableVersions());
+
+            if (languageChanged) {
+                // Tải lại I18n với ngôn ngữ mới
+                I18n.load(getClass(), "luna", new Locale(newLangCode));
+
+                // Thông báo cần khởi động lại
+                MessageBox.showAlert(I18n.get("alert.restartneeded"));
+            } else {
+                // Thông báo đã lưu
+                MessageBox.showAlert(I18n.get("settings.saved"));
+            }
         });
 
-        // General tab content
+        // === Gộp nội dung Tab ===
         VBox generalSettingsContent = new VBox(10, generalSettingsGrid, saveBox);
         generalSettingsContent.setPadding(new Insets(10));
-        generalSettingsContent.setStyle("-fx-background-color: rgba(50,50,50,0.3); -fx-background-radius: 15; -fx-border-radius: 15;");
+        generalSettingsContent.setStyle(
+            "-fx-background-color: rgba(50,50,50,0.3); -fx-background-radius: 15; -fx-border-radius: 15;"
+        );
 
         ScrollPane generalSettingsScroll = new ScrollPane(generalSettingsContent);
         generalSettingsScroll.setFitToWidth(true);
         generalSettingsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
+        // === Tạo Tab "General" ===
         Tab generalSettingsTab = new Tab(I18n.get("settings.general"), generalSettingsScroll);
         generalSettingsTab.setClosable(false);
+
 
         // ===== ADVANCED TAB =====
         GridPane advSettingsGrid = new GridPane();
@@ -1202,9 +1293,40 @@ public class Main extends Application {
 
         Tab advSettingsTab = new Tab(I18n.get("settings.advanced"), advSettingsScroll);
         advSettingsTab.setClosable(false);
+        
+     // Gọi phương thức để lấy VBox chứa nội dung chi tiết
+        VBox aboutContentNodes = createAboutContent(getHostServices());
 
+        // Điều chỉnh styling cho VBox bao bọc này (nếu cần)
+        // aboutContentNodes.setPadding(new Insets(15)); // Đã được set trong createAboutContent()
+        aboutContentNodes.setStyle("-fx-background-color: transparent;"); // Giữ nền trong suốt
+
+        // ----------------------------------------------------
+        // Thay thế đoạn code gốc của bạn bằng cấu trúc mới:
+        // ----------------------------------------------------
+
+        // VBox chứa tất cả nội dung (VBox này thay thế cho aboutSettingsGrid cũ)
+        // aboutSettingsContent sẽ là VBox chứa các node thông tin
+        VBox aboutSettingsContent = aboutContentNodes; 
+
+        // Thiết lập styling cho VBox chính của Tab
+        // Lưu ý: Đặt style cho VBox bên trong ScrollPane
+        aboutSettingsContent.setStyle("-fx-background-color: rgba(50,50,50,0.4); -fx-background-radius: 15; -fx-border-radius: 15;");
+        aboutSettingsContent.setPadding(new Insets(15)); // Tăng padding để nội dung cách lề
+
+        // ----------------------------------------------------
+
+        // ScrollPane bao bọc VBox
+        ScrollPane aboutSettingsScroll = new ScrollPane(aboutSettingsContent);
+        aboutSettingsScroll.setFitToWidth(true);
+        // Đặt background-color cho ScrollPane là transparent để thấy nền ứng dụng
+        aboutSettingsScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+
+        // Tab sử dụng ScrollPane
+        Tab aboutSettingsTab = new Tab(I18n.get("settings.about"), aboutSettingsScroll);
+        aboutSettingsTab.setClosable(false);
         // ===== Add Tabs =====
-        settingsTabPane.getTabs().addAll(generalSettingsTab, advSettingsTab);
+        settingsTabPane.getTabs().addAll(generalSettingsTab, advSettingsTab, aboutSettingsTab);
         settingsPage.getChildren().add(settingsTabPane);
 
     	
@@ -1565,12 +1687,15 @@ public class Main extends Application {
     	    case "kr":
     	        jsonUrl = "/backgrounds_kr.json";
     	        break;
+    	    case "vi":
+    	    	jsonUrl = "/backgrounds_vi.json";
+    	    	break;
     	    default:
     	        jsonUrl = "/backgrounds.json"; // mặc định (VN hoặc global)
     	        break;
     	}
 
-    	logInstance.info("[LunaLauncher] region=" + region);
+    	logInstance.info("region=" + region);
 
     	BackgroundImage backgroundImage = null;
 
@@ -1611,12 +1736,12 @@ public class Main extends Application {
         root.setPadding(new Insets(8));
         root.setStyle("-fx-background-color: rgba(30,41,59,0.92); -fx-background-radius: 16; -fx-border-radius: 16; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 20, 0, 0, 4);");
 
-        Scene scene = new Scene(root, 1280, 720);
+        Scene scene = new Scene(root, 1280, 720, javafx.scene.paint.Color.TRANSPARENT);
         scene.setFill(Color.TRANSPARENT);
         scene.getStylesheets().add(getClass().getResource("/application/application.css").toExternalForm());
 
         // ==== Splash stage ====
-     // ==== Splash Stage setup ==== 
+        // ==== Splash Stage setup ==== 
         Stage splashStage = new Stage(StageStyle.TRANSPARENT);
         StackPane splashRoot = new StackPane();
 
@@ -1765,47 +1890,430 @@ public class Main extends Application {
 
         // Khi task hoàn tất
         loadTask.setOnSucceeded(e -> {
-            FadeTransition fadeOut = new FadeTransition(Duration.seconds(1), splashRoot);
-            fadeOut.setFromValue(1.0);
-            fadeOut.setToValue(0.0);
-            fadeOut.setOnFinished(ev -> {
-                splashStage.close();
+            Platform.runLater(() -> {
+                logInstance.info("LoadTask succeeded, bắt đầu fade out splash...");
 
-                // ==== Main Stage ====
-                stage.setScene(scene);
-                stage.initStyle(StageStyle.TRANSPARENT);
-                stage.setTitle(I18n.get("app.title"));
-                stage.show();
+                // ==== Fade out Splash ====
+                FadeTransition fadeOut = new FadeTransition(Duration.seconds(1), splashRoot);
+                fadeOut.setFromValue(1.0);
+                fadeOut.setToValue(0.0);
 
-                root.setCache(true);
+                fadeOut.setOnFinished(ev -> {
+                    splashStage.close();
+                    logInstance.info("SplashStage closed, chuẩn bị setup Main Stage.");
 
-                FadeTransition fadeIn = new FadeTransition(Duration.millis(600), root);
-                fadeIn.setFromValue(0);
-                fadeIn.setToValue(1);
-                fadeIn.setInterpolator(Interpolator.EASE_BOTH);
-                fadeIn.play();
+                    stage.setScene(scene);
+                    stage.initStyle(StageStyle.TRANSPARENT);
+                    stage.setTitle(I18n.get("app.title"));
 
-                this.showNotification(root, I18n.get("nof.expiredlicense"), 3000);
+                    // ==== Kiểm tra thư mục Extensions ====
+                    Path extDir;
+                    String os = System.getProperty("os.name").toLowerCase();
+                    String userHome = System.getProperty("user.home");
+
+                    try {
+                        if (os.contains("win")) {
+                            extDir = Paths.get(System.getenv("APPDATA"), ".luna", "Extensions");
+                        } else {
+                            extDir = Paths.get(userHome, ".luna", "Extensions");
+                        }
+                        if (!Files.exists(extDir)) Files.createDirectories(extDir);
+
+                        logInstance.info("Quét folder Extensions: " + extDir);
+
+                        List<Path> uiJars;
+                        try (Stream<Path> files = Files.list(extDir)) {
+                            uiJars = files.filter(f -> f.toString().endsWith(".jar")).collect(Collectors.toList());
+                        }
+
+                        if (!uiJars.isEmpty()) {
+                            Path jarPath = uiJars.get(0);
+                            logInstance.info("Load UI Pack jar: " + jarPath.getFileName());
+
+                            UIPackLoader loader = new UIPackLoader(jarPath.toFile());
+                            String layoutClassName = "ui.DefaultLayout";
+
+                            try {
+                                URLClassLoader cl = loader.getClassLoader();
+                                for (String cn : findClassesInJar(jarPath)) {
+                                    Class<?> clazz = cl.loadClass(cn);
+                                    if (clazz.isAnnotationPresent(UiPackFiles.class)) {
+                                        UiPackFiles ann = clazz.getAnnotation(UiPackFiles.class);
+                                        layoutClassName = ann.layoutClass();
+                                        logInstance.info("Found layout class in jar: " + layoutClassName);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                logInstance.warn("Không thể load layout class từ jar: " + ex.getMessage());
+                            }
+
+                            Parent layoutRoot = loader.loadLayout(layoutClassName);
+                            if (layoutRoot != null) {
+                                root.getChildren().add(layoutRoot);
+                                logInstance.info("Layout root đã thêm vào Scene.");
+                            }
+
+                        } else {
+                            logInstance.warn("Không tìm thấy UI Pack jar trong Extensions (launcher sẽ dùng giao diện mặc định).");
+                        }
+
+                    } catch (IOException ioEx) {
+                        logInstance.error("Lỗi khi đọc folder Extensions: " + ioEx.getMessage());
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+
+                    // ==== Luôn có hiệu ứng tuyết (không phụ thuộc UIPack) ====
+                    logInstance.info("Khởi tạo hiệu ứng tuyết mặc định...");
+
+                    Canvas snowCanvas = new Canvas();
+                    snowCanvas.setMouseTransparent(true);
+                    snowCanvas.widthProperty().bind(scene.widthProperty());
+                    snowCanvas.heightProperty().bind(scene.heightProperty());
+                    GraphicsContext g = snowCanvas.getGraphicsContext2D();
+
+                    int snowCount = 80; // số lượng tuyết mặc định
+                    Snowflake[] flakes = new Snowflake[snowCount];
+                    Random rand = new Random();
+                    for (int i = 0; i < flakes.length; i++) flakes[i] = new Snowflake(rand);
+
+                    AnimationTimer snowTimer = new AnimationTimer() {
+                        @Override
+                        public void handle(long now) {
+                            double w = snowCanvas.getWidth();
+                            double h = snowCanvas.getHeight();
+                            for (Snowflake s : flakes) s.resize(w, h);
+                            g.clearRect(0, 0, w, h);
+                            for (Snowflake s : flakes) {
+                                s.update();
+                                g.setFill(Color.rgb(255, 255, 255, s.alpha));
+                                g.fillOval(s.x, s.y, s.size, s.size);
+                            }
+                        }
+                    };
+                    
+                   
+                    
+                 // === FIREWORK OVERLAY FOR LUNALAUNCHER 0.0.04 ===
+
+                    Canvas fireCanvas = new Canvas();
+                    fireCanvas.setMouseTransparent(true);
+                    fireCanvas.widthProperty().bind(scene.widthProperty());
+                    fireCanvas.heightProperty().bind(scene.heightProperty());
+                    GraphicsContext fg = fireCanvas.getGraphicsContext2D();
+
+                    // Hằng số
+                    double gravity = 0.6;
+                    double fadeSpeed = 0.025;
+                    int particlesPerExplosion = 70;
+                    Color[] palette = {
+                        Color.web("#ffe6a7"), Color.web("#fbb8c0"), 
+                        Color.web("#80ffb0"), Color.web("#a7ccff"), Color.web("#ffb3ff")
+                    };
+
+                    // Rocket class
+                    class Rocket {
+                        double x, y, vx, vy;
+                        Color color;
+                        boolean rising = true;
+
+                        Rocket(double startX, Color color) {
+                            this.x = startX;
+                            this.y = fireCanvas.getHeight();
+                            this.color = color;
+                            this.vy = -(8 + rand.nextDouble() * 2);
+
+                            double randomFactor = rand.nextDouble();
+                            if(randomFactor < 0.8) {
+                                vx = (rand.nextDouble() - 0.5) * 1.5; // bay thẳng
+                            } else {
+                                vx = (rand.nextDouble() - 0.5) * 12; // bay lệch ra ngoài
+                            }
+                        }
+
+                        // Trả về 1 nếu nổ, 2 nếu bay ra ngoài, 0 nếu đang bay
+                        int update(double w, double h) {
+                            vy += gravity * 0.1;
+                            x += vx * 0.7;
+                            y += vy * 0.7;
+
+                            if(rising && vy >= 0) {
+                                rising = false;
+                                return 1; // nổ thành công
+                            }
+                            if(y < -20 || x < -50 || x > w + 50) return 2; // bay ra ngoài
+                            return 0;
+                        }
+
+                        void draw(GraphicsContext g) {
+                            g.setLineWidth(1.5);
+                            g.setStroke(color.deriveColor(0, 1, 1, 0.7));
+                            g.strokeLine(x, y, x - vx*0.5, y - vy*0.5);
+
+                            g.setFill(color.deriveColor(0, 1, 1, 1.0));
+                            g.fillOval(x-1, y-2, 3, 3);
+                        }
+                    }
+
+                    // Firework class
+                    class Firework {
+                        double x, y;
+                        double[] px, py, vx, vy, alpha;
+                        Color color;
+
+                        Firework(double x, double y, Color color, int count) {
+                            this.x = x; this.y = y; this.color = color;
+                            px = new double[count]; py = new double[count];
+                            vx = new double[count]; vy = new double[count];
+                            alpha = new double[count];
+                            for(int i=0;i<count;i++) {
+                                double angle = rand.nextDouble() * 2*Math.PI;
+                                double speed = 1.5 + rand.nextDouble() * 4;
+                                vx[i] = Math.cos(angle) * speed;
+                                vy[i] = Math.sin(angle) * speed;
+                                px[i] = 0; py[i] = 0; alpha[i] = 1.0;
+                            }
+                        }
+
+                        boolean updateAndDraw(GraphicsContext g) {
+                            boolean alive = false;
+                            for(int i=0;i<px.length;i++) {
+                                if(alpha[i]>0) {
+                                    alive = true;
+                                    vy[i] += gravity*0.1;
+                                    px[i] += vx[i]*0.7;
+                                    py[i] += vy[i]*0.7;
+                                    alpha[i] -= fadeSpeed;
+
+                                    g.setFill(color.deriveColor(0,1,1,alpha[i]));
+                                    g.fillOval(x+px[i], y+py[i], 2, 2);
+                                }
+                            }
+                            return alive;
+                        }
+                    }
+
+                    // Danh sách rocket + firework
+                    List<Rocket> rockets = new ArrayList<>();
+                    List<Firework> fireworks = new ArrayList<>();
+                    long[] lastLaunch = {0};
+                    double launchInterval = 700;
+
+                    // Animation Timer
+                    AnimationTimer fireTimer = new AnimationTimer() {
+                        @Override
+                        public void handle(long now) {
+                            double w = fireCanvas.getWidth(), h = fireCanvas.getHeight();
+                            long current = System.currentTimeMillis();
+
+                            // Tạo rocket mới
+                            if(current - lastLaunch[0] > launchInterval + rand.nextInt(1000)) {
+                                double startX = w/4 + rand.nextDouble()*(w/2);
+                                Color c = palette[rand.nextInt(palette.length)];
+                                rockets.add(new Rocket(startX, c));
+                                lastLaunch[0] = current;
+                            }
+
+                            // Fade canvas mờ → tạo trail
+                            fg.setGlobalAlpha(0.2);
+                            fg.setGlobalBlendMode(BlendMode.SRC_OVER);
+                            fg.setFill(Color.rgb(0, 0, 0, 0.8));
+                            fg.clearRect(0, 0, w, h); // xóa pixel cũ nhưng vẫn trong suốt
+                            fg.setGlobalAlpha(1.0);
+
+
+                            // Cập nhật rocket
+                            Iterator<Rocket> itR = rockets.iterator();
+                            while(itR.hasNext()) {
+                                Rocket r = itR.next();
+                                r.draw(fg);
+                                int status = r.update(w,h);
+                                if(status==1) {
+                                    fireworks.add(new Firework(r.x,r.y,r.color,particlesPerExplosion));
+                                    itR.remove();
+                                } else if(status==2) {
+                                    itR.remove(); // bay ra ngoài
+                                }
+                            }
+
+                            // Cập nhật firework
+                            fireworks.removeIf(f -> !f.updateAndDraw(fg));
+                        }
+                    };
+
+                    stage.setOnShown(ev2 -> {
+                        root.getChildren().addAll(snowCanvas, fireCanvas);
+                        logInstance.info("Snow overlay canvas attached (default).");
+
+                        FadeTransition fadeIn = new FadeTransition(Duration.millis(600), root);
+                        fadeIn.setFromValue(0);
+                        fadeIn.setToValue(1);
+                        fadeIn.setInterpolator(Interpolator.EASE_BOTH);
+                        fadeIn.play();
+
+                        showNotification(root, I18n.get("nof.expiredlicense"), 3000);
+                        fireTimer.start();
+                        logInstance.info("Snow overlay animation started.");
+                    });
+
+                    stage.show();
+                    logInstance.info("Main Stage shown.");
+                });
+
+                fadeOut.play();
+                logInstance.info("FadeOut splash started.");
             });
-            fadeOut.play();
         });
+
 
         // Chạy task trong thread nền
         new Thread(loadTask).start();
 
-
-
         // ==== Animation buttons & notification ====
-        addButtonAnimation(playButton);
-        addButtonAnimation(accounts);
-        addButtonAnimation(home);
-        addButtonAnimation(missions);
-        addButtonAnimation(mods);
-        addButtonAnimation(skins);
-        addButtonAnimation(settings);
-        addButtonAnimation(minimize);
-        addButtonAnimation(close);
-        //addButtonAnimation(addSkinBtn);
+        this.addButtonAnimation(playButton);
+        this.addButtonAnimation(accounts);
+        this.addButtonAnimation(home);
+        this.addButtonAnimation(missions);
+        this.addButtonAnimation(mods);
+        this.addButtonAnimation(skins);
+        this.addButtonAnimation(settings);
+        this.addButtonAnimation(minimize);
+        this.addButtonAnimation(close);
+        //this.addButtonAnimation(addSkinBtn);
+    }
+    
+    // Đặt phương thức này trong Class chứa cấu hình Setting của bạn
+    public VBox createAboutContent(HostServices hostServices) {
+        // 1. Container chính VBox (khoảng cách 10 giữa các phần tử)
+        VBox content = new VBox(10); 
+
+        // 2. Thêm Header (Logo + Tiêu đề + Bản quyền)
+        HBox header = this.createAboutHeader();
+        
+        // 3. Thông tin Phiên bản và Mô tả
+        final String GMAIL_SUPPORT_EMAIL = "tranhoang2009vqht@gmail.com"; // ĐỊA CHỈ EMAIL RIÊNG CỦA BẠN
+        final String WEBSITE_URL = "https://pmgdev64.github.io/lunaLauncher";
+
+        // Thông tin cơ bản
+        Label versionInfo = new Label(
+            "Phiên bản: 0.0.03 (Build: 1026)\n" +
+            "Tác giả: PmgDev64/PmgTeam\n" +
+            "Phát hành: Năm 2025 (Thuộc Series BetaTest)"
+        );
+        versionInfo.setTextFill(Color.web("#E0E0E0"));
+        
+        // Mô tả
+        Label descriptionTitle = new Label("Mô tả:");
+        // Lưu ý: Font "Comic Relief" có thể không có sẵn trên mọi hệ thống.
+        descriptionTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14)); 
+        descriptionTitle.setTextFill(Color.web("#C3E88D"));
+
+        Label description = new Label(
+            "LunaLauncher là công cụ khởi chạy cao cấp được thiết kế để tối ưu hóa trải nghiệm Game/Ứng dụng của bạn. " +
+            "Chúng tôi cung cấp khả năng tùy chỉnh sâu, quản lý mod dễ dàng và hiệu suất ổn định."
+        );
+        description.setWrapText(true);
+        description.setTextFill(Color.web("#E0E0E0"));
+
+        // Bản quyền và Giấy phép
+        Label licenseTitle = new Label("Giấy Phép");
+        licenseTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14));
+        licenseTitle.setTextFill(Color.web("#C3E88D"));
+
+        Label licenseText = new Label(
+            "Ứng dụng này sử dụng các thư viện mã nguồn mở, bao gồm:\n" +
+            "  - Log4j2 (Apache License 2.0)\n" +
+            "  - JavaFX (GPLv2 with Classpath Exception)\n" +
+            "  - [Thư viện khác...]"
+        );
+        licenseText.setTextFill(Color.web("#E0E0E0"));
+        
+        // ------------------------------------------------------------------
+        // 4. Liên hệ (SỬ DỤNG HYPERLINK)
+        // ------------------------------------------------------------------
+
+        // 4a. Liên kết Trang web (Có thể click được)
+        Hyperlink websiteLink = new Hyperlink(WEBSITE_URL.replace("https://", "")); // Hiển thị URL không có https://
+        websiteLink.setTextFill(Color.web("#4DB6AC")); 
+        websiteLink.setFont(Font.font("Comic Relief", 12));
+        websiteLink.setOnAction(e -> {
+            if (hostServices != null) {
+                hostServices.showDocument(WEBSITE_URL);
+            }
+        });
+        
+        // 4b. Email Hỗ trợ (Label)
+        Label emailLabel = new Label("Hỗ trợ: " + GMAIL_SUPPORT_EMAIL);
+        emailLabel.setTextFill(Color.web("#4DB6AC"));
+        emailLabel.setFont(Font.font("Comic Relief", 12));
+
+        // 4c. Container cho Liên hệ
+        VBox contactContainer = new VBox(0); 
+        contactContainer.getChildren().addAll(
+            new Label("Trang web:"), websiteLink, 
+            emailLabel
+        );
+        // ------------------------------------------------------------------
+
+        // 5. Thêm tất cả các phần tử vào VBox chính
+        content.getChildren().addAll(
+            header, 
+            versionInfo,
+            new Separator(), 
+            
+            descriptionTitle,
+            description,
+            
+            licenseTitle,
+            licenseText,
+            
+            new Separator(),
+            contactContainer // <<< THAY THẾ contact CŨ
+        );
+
+        return content;
+    }
+    
+    public HBox createAboutHeader() {
+        // 1. Logo (Icon)
+        ImageView logoView = new ImageView();
+        try {
+            // ĐƯỜNG DẪN CẦN CHỈNH SỬA: Giả định logo.png nằm trong /images/
+            Image logoImage = new Image(getClass().getResourceAsStream("/resources/icons/logo.png"));
+            logoView.setImage(logoImage);
+            logoView.setFitWidth(60); // Kích thước logo đã điều chỉnh
+            logoView.setFitHeight(60); 
+        } catch (Exception e) {
+            System.err.println("Lỗi khi tải Logo.png: " + e.getMessage());
+            // Nếu không tải được ảnh, dùng placeholder text
+            Label placeholder = new Label("🌙");
+            placeholder.setFont(Font.font("Noto Sans JP", FontWeight.BOLD, 30));
+            return new HBox(placeholder); // Trả về HBox chỉ có placeholder
+        }
+
+        // 2. Text (Tiêu đề và Bản quyền)
+        Label appTitle = new Label("LunaLauncher");
+        appTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 28));
+        appTitle.setTextFill(Color.web("#79A3FF")); // Màu xanh dương sáng (phù hợp với logo)
+
+        Label copyrightText = new Label("© 2025 PmgTeam. All Rights Reserved.");
+        copyrightText.setFont(Font.font("Comic Relief", 12));
+        copyrightText.setTextFill(Color.web("#E0E0E0")); // Màu chữ nhạt
+
+        // 3. Đặt Text vào VBox để xếp chồng
+        VBox textContainer = new VBox(5, appTitle, copyrightText); // Khoảng cách 5
+        textContainer.setAlignment(Pos.CENTER_LEFT);
+
+        // 4. Kết hợp Logo và Text vào HBox
+        HBox header = new HBox(15, logoView, textContainer); // Khoảng cách 15
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(0, 0, 15, 0)); // Tạo khoảng cách phía dưới (tăng lên 15)
+        
+        // Đường phân cách dưới header
+        header.setStyle("-fx-border-color: #333; -fx-border-width: 0 0 1 0;"); 
+
+        return header;
     }
     
     private void showNotification(StackPane parent, String message, int durationMillis) {
@@ -1928,6 +2436,7 @@ public class Main extends Application {
                 in.play();
                 currentPage = page;
             });
+            out.setInterpolator(this.CUBIC_OUT);
             out.play();
         } else {
             page.setOpacity(0.0);
@@ -1935,6 +2444,7 @@ public class Main extends Application {
             FadeTransition in = new FadeTransition(Duration.millis(220), page);
             in.setFromValue(0.0);
             in.setToValue(1.0);
+            in.setInterpolator(this.CUBIC_OUT);
             in.play();
             currentPage = page;
         }
@@ -1946,6 +2456,55 @@ public class Main extends Application {
             }
         }
     }
+    
+    public static List<String> findClassesInJar(Path jarPath) throws IOException {
+        List<String> classes = new ArrayList<>();
+        try (JarFile jar = new JarFile(jarPath.toFile())) {
+            jar.stream().forEach(entry -> {
+                if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
+                    // Chuyển từ path sang full-qualified class name
+                    String className = entry.getName()
+                            .replace("/", ".")   // đổi / thành .
+                            .replace(".class", ""); // bỏ .class
+                    classes.add(className);
+                }
+            });
+        }
+        return classes;
+    }
+    
+    // Lớp nhỏ xử lý tuyết
+    class Snowflake {
+        double x, y;
+        double size;
+        double speed;
+        double alpha;
+        double canvasWidth = 800;
+        double canvasHeight = 600;
+
+        public Snowflake(Random rand) {
+            x = rand.nextDouble() * canvasWidth;
+            y = rand.nextDouble() * canvasHeight;
+            size = 2 + rand.nextDouble() * 4;
+            speed = 0.5 + rand.nextDouble() * 1.5;
+            alpha = 0.3 + rand.nextDouble() * 0.7;
+        }
+
+        public void update() {
+            y += speed;
+            if (y > canvasHeight) {
+                y = 0;
+                x = Math.random() * canvasWidth;
+            }
+        }
+
+        public void resize(double width, double height) {
+            canvasWidth = width;
+            canvasHeight = height;
+        }
+    }
+
+
 
     /*private void addButtonAnimation(Button button) {
         // Lưu style gốc
@@ -2016,62 +2575,55 @@ public class Main extends Application {
     }*/
     private void addButtonAnimation(Button button) {
         final String baseStyle = button.getStyle();
+        Interpolator cubicOut = Interpolator.SPLINE(0.33, 1, 0.68, 1);
+        DropShadow glow = new DropShadow(12, Color.rgb(180, 240, 255, 0.4));
 
+        // Hover in
         button.setOnMouseEntered(e -> {
-            ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
-            st.setToX(1.08);
-            st.setToY(1.08);
+            button.setEffect(glow);
+            ScaleTransition st = new ScaleTransition(Duration.millis(600), button);
+            st.setToX(1.06);
+            st.setToY(1.06);
+            st.setInterpolator(cubicOut);
             st.play();
 
-            // Animation mượt màu nền
-            Timeline hoverAnim = new Timeline(
-                new KeyFrame(Duration.ZERO,
-                    new KeyValue(button.backgroundProperty(), button.getBackground())
-                ),
-                new KeyFrame(Duration.millis(200),
-                    new KeyValue(button.styleProperty(),
-                        baseStyle + "-fx-background-color: linear-gradient(to bottom, #4facfe, #00f2fe);"
-                    )
-                )
+            button.setStyle(baseStyle +
+                "-fx-background-color: linear-gradient(to bottom, #b7d3f2, #dfe9f3);"
             );
-            hoverAnim.play();
-            button.setEffect(new javafx.scene.effect.DropShadow(8, Color.rgb(0,0,0,0.25)));
         });
 
+        // Hover out
         button.setOnMouseExited(e -> {
-            ScaleTransition st = new ScaleTransition(Duration.millis(200), button);
+            ScaleTransition st = new ScaleTransition(Duration.millis(400), button);
             st.setToX(1.0);
             st.setToY(1.0);
+            st.setInterpolator(cubicOut);
             st.play();
 
-            Timeline exitAnim = new Timeline(
-                new KeyFrame(Duration.ZERO,
-                    new KeyValue(button.styleProperty(), button.getStyle())
-                ),
-                new KeyFrame(Duration.millis(200),
-                    new KeyValue(button.styleProperty(), baseStyle)
-                )
-            );
-            exitAnim.play();
-            button.setEffect(null);
+            st.setOnFinished(ev -> {
+                button.setStyle(baseStyle);
+                button.setEffect(null);
+            });
         });
 
+        // Press
         button.setOnMousePressed(e -> {
-            ScaleTransition st = new ScaleTransition(Duration.millis(120), button);
+            ScaleTransition st = new ScaleTransition(Duration.millis(80), button);
             st.setToX(0.95);
             st.setToY(0.95);
+            st.setInterpolator(Interpolator.EASE_IN);
             st.play();
         });
 
+        // Release
         button.setOnMouseReleased(e -> {
             ScaleTransition st = new ScaleTransition(Duration.millis(120), button);
-            st.setToX(1.08);
-            st.setToY(1.08);
+            st.setToX(1.06);
+            st.setToY(1.06);
+            st.setInterpolator(cubicOut);
             st.play();
         });
     }
-
-
 
     private List<String> loadMinecraftVersions(String minecraftDir) {
         List<String> versions = new ArrayList<>();
@@ -2085,27 +2637,95 @@ public class Main extends Application {
         }
         return versions;
     }
-
-    public static void main(String[] theNextWashingMachine) throws Exception {
+    
+    private static void runLauncher(String[] paramOfString)
+    {
     	logInstance.info("Starting....");
-    	OptionParser parser = new OptionParser();
+        OptionParser parser = new OptionParser();
 
         parser.accepts("debug").withOptionalArg().ofType(Boolean.class);
         parser.accepts("verbose").withOptionalArg().ofType(Boolean.class);
         parser.accepts("nosplash").withOptionalArg().ofType(Boolean.class);
 
-        OptionSet options = parser.parse(theNextWashingMachine);
+        OptionSet options = parser.parse(paramOfString);
 
         debugMode = options.has("debug");
         verbose = options.has("verbose");
         noSplash = options.has("nosplash");
 
-        if (debugMode) logInstance.info("[DEBUG] Debug mode enabled");
-        if (verbose) logInstance.info("[VERBOSE] Verbose logging enabled");
-        if (noSplash) logInstance.info("[INFO] Splash screen disabled");
+        if (debugMode) {
+            logInstance.debug("[DEBUG] Debug mode enabled");
+        }
 
-        launch(theNextWashingMachine); // JavaFX start()
+        if (verbose) {
+            logInstance.warn("[VERBOSE] Verbose logging enabled");
+        }
+
+        if (noSplash) {
+            //SplashScreen.disable();
+            logInstance.info("[INFO] Splash screen disabled");
+        }
+
+        launch(paramOfString);
     }
+
+    public static void main(String[] theNextWashingMachine) throws Exception {
+        logInstance.info("=== LunaLauncher Core ===");
+        logInstance.info("Java version: {}", System.getProperty("java.version"));
+        logInstance.info("OS: {} ({})", System.getProperty("os.name"), System.getProperty("os.arch"));
+        logInstance.info("Working directory: {}", System.getProperty("user.dir"));
+
+        // --- Kiểm tra phiên bản Java ---
+        String javaVersion = System.getProperty("java.version");
+        if (!javaVersion.startsWith("17")) {
+            logInstance.warn("⚠️  Warning: LunaLauncher requires Java 17 or higher!");
+            logInstance.warn("⚠️  Detected: {}", javaVersion);
+            logInstance.warn("⚠️  Some features may not work properly on this runtime!");
+        }
+
+        // --- Kiểm tra cấu hình hệ thống ---
+        String osName = System.getProperty("os.name");
+        String osArch = System.getProperty("os.arch");
+        String userName = System.getProperty("user.name");
+        long totalMem = Runtime.getRuntime().maxMemory() / (1024 * 1024); // MB
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+
+        logInstance.info("System check:");
+        logInstance.info(" - User: {}", userName);
+        logInstance.info(" - CPU Cores: {}", cpuCores);
+        logInstance.info(" - Max Memory (JVM): {} MB", totalMem);
+        logInstance.info(" - Architecture: {}", osArch);
+
+        if (totalMem < 512) {
+            logInstance.warn("⚠️  Low memory detected: {} MB (recommended ≥ 1024 MB)", totalMem);
+        }
+        if (!osArch.contains("64")) {
+            logInstance.warn("⚠️  64-bit system recommended for better performance.");
+        }
+        if (GraphicsEnvironment.isHeadless()) {
+            logInstance.warn("⚠️  Headless environment detected. GUI may not be available!");
+        }
+
+        // --- Khởi chạy lõi LunaCore ---
+        Thread coreThread = new Thread(() -> {
+            try {
+                logInstance.info("[LunaCore] Starting....");
+                runLauncher(theNextWashingMachine);
+            } catch (Throwable t) {
+                logInstance.error("[LunaCore] Fatal error occurred", t);
+                System.err.println("LunaLauncher encountered a critical error. Check logs for details.");
+                System.exit(1);
+            }
+        }, "LunaCore");
+
+        coreThread.setUncaughtExceptionHandler((thread, throwable) -> {
+            logInstance.error("Uncaught exception in thread: {}", thread.getName(), throwable);
+        });
+
+        coreThread.start();
+        logInstance.info("[Main] LunaCore thread started successfully.");
+    }
+
 
 	private void hide() {
 	}

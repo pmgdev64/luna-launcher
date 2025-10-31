@@ -1,0 +1,122 @@
+# === App ===
+app.title=Luna Launcher (English)
+
+# === Overlay ===
+overlay.load=Game is running, cannot operate....
+
+# === Window Controls ===
+window.minimize=_
+window.close=X
+
+# === Menu ===
+menu.play=Run
+menu.selectversion=Select Version
+menu.installandplay=Install & Run
+menu.playdemo=Run Demo
+menu.installandplaydemo=Install & Run Demo
+menu.playlegacy=Run Legacy
+menu.installandplaylegacy=Install & Run Legacy
+menu.home=Home
+menu.accounts=Accounts
+menu.missions=Missions
+menu.mods=Mods
+menu.settings=Settings
+
+# === Accounts ===
+accounts.loginorsignup=Login / Sign Up sign
+
+# === Alerts / Notifications ===
+alert.selectversion=Please select version before running
+alert.launchfail=Unable to run version {0}. Error: {1}
+alert.restartneeded=Restart the Application to Apply Changes
+nof.expiredlicense=Few months left until the end of 2025
+nof.installcomplete=Installation complete
+nof.installfailed=Installation failed
+nof.launching=Launching...
+
+# === Missions ===
+missions.m1=Mission 1: Successfully installed the game
+missions.m2=Mission 2: Login account
+missions.m3=Mission 3: Run the game without errors
+
+# === Mods ===
+mods.search=Search...
+mods.searchbtn=Search
+mods.category=Category
+mods.category.all=All
+mods.category.utility=Utilities
+mods.category.performance=Performance optimization
+mods.category.tech=Technology
+mods.category.magic=Magic
+mods.installed=Mods installed install
+mods.install=Install
+mods.delete=Remove
+mods.desc=Mod description: {0}
+mods.downloads=Downloads:
+
+# === Settings ===
+settings.gamepath=Game path:
+settings.browse=Browse...
+settings.selectfolder=Select game folder
+settings.cancel=Cancel
+settings.autoupdate=Auto update
+settings.theme=Theme
+settings.theme.light=Light
+settings.theme.dark=Dark
+settings.theme.system=System
+settings.save=Save settings
+settings.saved=Saved settings
+settings.path=Path:
+settings.language=Language:
+
+# === Errors ===
+error.invalidcredentials=Invalid account or password
+error.network=Network error, please check connection
+error.missinggamepath=Not configure game path
+error.unsupported=This version is not supported
+error.unknown=An unknown error occurred
+
+loading.title=Loading
+
+# === Login ===
+login.title=Select login items
+offline.username=Username
+offline.mode=Offline mode
+offline.title=Offline
+local.title=Internal
+yourauth.title=Auth_Name
+microsoft.title=Microsoft
+offline.loginbutton=Login (Offline)
+login.cancel=Cancel
+local.auth=Internal Mode
+local.username=Username
+local.password=Password
+local.login=Login (Internal)
+yourauth.mode=[Auth Name Here]
+yourauth.username=Username (Auth_Name)
+yourauth.password=Password (Auth_Name)
+yourauth.login=Log in ([Auth name here])
+microsoft.login=Log in with Microsoft
+microsoft.noavailable=This feature is not available yet
+
+# === OpenFile ===
+openfile.title=Select folder
+openfile.back=Back
+openfile.forward=Go forward
+openfile.up=Go up
+
+# === LoadingScreen ===
+legacy.loading=Launching legacy version.....
+version.metadata=Loading Version Data Files.....
+client.jarfile=Loading Client Executable File.....
+libraries.download=Loading required libraries.....
+natives.extract=Extracting libraries.....
+assets.download=Loading Asset files.....
+game.launching=Launching.....
+library.path=Library Path:
+assets.path=Asset Path:
+
+# === SettingPage ===
+settings.general=General
+settings.advanced=Advanced
+settings.about=About

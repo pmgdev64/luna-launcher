@@ -22,6 +22,8 @@ module launcher {
  // Nếu bạn dùng cả phần core (ví dụ có file log4j2.xml, RollingFileAppender, v.v.)
     requires org.apache.logging.log4j.core;
     
+    exports vn.pmgteam.luna;
+    
     //requires org.apache.log4j;
     
     //requires org.apache.logging.log4j.to.slf4j;
