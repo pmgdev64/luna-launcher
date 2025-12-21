@@ -1,3 +1,11 @@
+/*
+ * Module: Config.java
+ * Chức năng: Lưu trữ thông tin cấu hình thông qua tệp JSON (.json).
+ * Lưu ý: Module hiện tại chưa sử dụng.
+ * Bản quyền: PmgTeam
+ * Tác giả: PmgDev64
+ * Ngày tạo: chưa xác định
+ */
 package vn.pmgteam.luna;
 
 import java.io.*;

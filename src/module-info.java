@@ -1,3 +1,28 @@
+/*******************************************************************************
+ * LunaLauncher 0.0.04
+ * 
+ * © 2025-2026 PmgDev64 & PmgTeam. Bảo lưu mọi quyền.
+ * 
+ * THÔNG TIN DỰ ÁN:
+ *  - Tên dự án: LunaLauncher
+ *  - Phiên bản: 0.0.04 (chủ đề earlyWinter)
+ *  - Tác giả: PepperMCGamers Ch. PmgTeam (PmgDev64) & PmgTeam
+ * 
+ * THÔNG BÁO BẢN QUYỀN:
+ *  1. Phần mềm và mã nguồn này được bảo vệ theo luật bản quyền quốc tế.
+ *  2. Cấm sao chép, chỉnh sửa, phân phối hoặc sử dụng mã nguồn
+ *     cho mục đích thương mại mà không có sự cho phép bằng văn bản từ tác giả.
+ *  3. Mọi hành vi vi phạm có thể dẫn đến xử lý pháp lý.
+ * 
+ * LIÊN HỆ:
+ *  - Email: tranhoang2009vqht@gmail.com
+ *  - Website: https://pmgdev64.github.io/lunaLauncher
+ * 
+ * MIỄN TRỪ TRÁCH NHIỆM:
+ *  - Phần mềm được cung cấp "nguyên trạng" không kèm bất kỳ bảo hành nào.
+ *  - Sử dụng phần mềm là hoàn toàn tự chịu rủi ro. Tác giả không chịu trách
+ *    nhiệm cho bất kỳ thiệt hại hay mất mát nào phát sinh.
+ ******************************************************************************/
 module launcher {
 	requires javafx.controls;
 	requires javafx.graphics;

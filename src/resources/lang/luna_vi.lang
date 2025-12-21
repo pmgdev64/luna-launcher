@@ -120,3 +120,29 @@ assets.path=Thư mục tài nguyên:
 settings.general=Chung
 settings.advanced=Nâng cao
 settings.about=Giới thiệu
+
+# === AboutInfo ===
+about.version=Phiên bản:
+about.author=Người phát triển: PmgDev64 / PmgTeam
+about.release=Phát hành: Ngày 13 tháng 12 năm 2025 (Bản cuối của chuỗi BetaTest)
+
+about.info1=LunaLauncher là một launcher Minecraft được thiết kế nhằm tối ưu trải nghiệm chơi game bằng cách đơn giản hóa quá trình tải xuống, cài đặt và khởi chạy Minecraft.
+about.info2=Launcher cung cấp các tùy chỉnh cơ bản, hỗ trợ quản lý mod đơn giản và một lõi launcher ổn định, tập trung vào độ tin cậy trong quá trình chơi.
+about.info3=Phiên bản này thuộc giai đoạn thử nghiệm beta và chỉ được sử dụng cho mục đích kiểm thử và thu thập phản hồi.
+
+about.license=Giấy phép: Chưa xác định (giai đoạn thử nghiệm beta)
+
+about.credits=Ghi công: Ứng dụng này sử dụng các thư viện mã nguồn mở và thành phần bên thứ ba, bao gồm:
+
+about.lib.minecraft=Thư viện Minecraft của Mojang / Microsoft
+about.lib.jre=Java Runtime Environment (JRE)
+about.lib.gson=Gson
+about.lib.apache=Apache Commons
+about.lib.other=(và các thư viện mã nguồn mở khác...)
+
+about.website=Trang web:
+about.website.url=https://github.com/pngdev64/luna-launcher
+
+about.support=Hỗ trợ:
+about.support.github=GitHub Issues
+about.support.community=Phản hồi cộng đồng và kiểm thử beta

@@ -90,6 +90,7 @@ public class ConfigManager {
             try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
                 writer.write(obj.toString(4));
             }
+            Main.logInstance.info("Đã lưu cài đặt");
 
         } catch (IOException e) {
             e.printStackTrace();

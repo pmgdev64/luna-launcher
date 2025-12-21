@@ -1,3 +1,28 @@
+/*******************************************************************************
+ * LunaLauncher 0.0.05 (Phiên bản cuối cùng của Series BetaTest
+ * 
+ * © 2025-2026 PmgDev64 & PmgTeam. Bảo lưu mọi quyền.
+ * 
+ * THÔNG TIN DỰ ÁN:
+ *  - Tên dự án: LunaLauncher
+ *  - Phiên bản: 0.0.04 (chủ đề earlyWinter)
+ *  - Tác giả: PepperMCGamers Ch. PmgTeam (PmgDev64) & PmgTeam
+ * 
+ * THÔNG BÁO BẢN QUYỀN:
+ *  1. Phần mềm và mã nguồn này được bảo vệ theo luật bản quyền quốc tế.
+ *  2. Cấm sao chép, chỉnh sửa, phân phối hoặc sử dụng mã nguồn
+ *     cho mục đích thương mại mà không có sự cho phép bằng văn bản từ tác giả.
+ *  3. Mọi hành vi vi phạm có thể dẫn đến xử lý pháp lý.
+ * 
+ * LIÊN HỆ:
+ *  - Email: tranhoang2009vqht@gmail.com
+ *  - Website: https://pmgdev64.github.io/lunaLauncher
+ * 
+ * MIỄN TRỪ TRÁCH NHIỆM:
+ *  - Phần mềm được cung cấp "nguyên trạng" không kèm bất kỳ bảo hành nào.
+ *  - Sử dụng phần mềm là hoàn toàn tự chịu rủi ro. Tác giả không chịu trách
+ *    nhiệm cho bất kỳ thiệt hại hay mất mát nào phát sinh.
+ ******************************************************************************/
 package application;
 
 import javafx.animation.Animation;
@@ -78,6 +103,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -97,7 +125,11 @@ import org.json.JSONObject;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import vn.pmgteam.luna.AppInfo;
+import vn.pmgteam.luna.AppUpdater;
 import vn.pmgteam.luna.ConfigManager;
+import vn.pmgteam.luna.CountdownBox;
+import vn.pmgteam.luna.DebugConsoleBox;
 import vn.pmgteam.luna.I18n;
 import vn.pmgteam.luna.LauncherConfig;
 import vn.pmgteam.luna.LoadingGui;
@@ -107,6 +139,7 @@ import vn.pmgteam.luna.MessageBox;
 import vn.pmgteam.luna.MinecraftLauncher;
 import vn.pmgteam.luna.MinecraftSkinViewer;
 import vn.pmgteam.luna.NofiticationBox;
+import vn.pmgteam.luna.NowPlayingBox;
 import vn.pmgteam.luna.NowPlayingDialog;
 import vn.pmgteam.luna.OpenFileBox;
 import vn.pmgteam.luna.OverlayConfig;
@@ -131,8 +164,8 @@ public class Main extends Application {
     private ComboBox<String> versionSelect; // chỉ khai báo
     public static Image titleIcon; // chỉ khai báo
     
-    private ConfigManager configManager;
-    private LauncherConfig cfg;
+    public static ConfigManager configManager;
+    public LauncherConfig cfg;
     
     public static Image folderIcon;
     
@@ -157,6 +190,8 @@ public class Main extends Application {
     
     // Ở đầu class Main, thêm:
     private StackPane overlay;
+    
+    public String launcherVersion = "0.0.05";
     
     public static Logger logInstance = LogManager.getLogger("LunaLauncher");
     
@@ -525,16 +560,15 @@ public class Main extends Application {
     public void start(Stage stage) throws Exception {
 
     	// 1. Tải ngôn ngữ dựa trên config đã lưu
-    	// Load config
-    	configManager = new ConfigManager();
-    	cfg = configManager.getConfig();
-    	selectedGamePath = cfg.gamePath; // sử dụng gamePath đã lưu
-    	
-        // Đảm bảo cfg.language đã được định nghĩa trong LauncherConfig (mặc định "vi")
-        String langCode = (cfg.language != null && !cfg.language.isEmpty()) ? cfg.language : "vi";
-        I18n.load(getClass(), "luna", new Locale(langCode));
+    	configManager = new ConfigManager();            // <--- ONLY ONE INSTANCE
+    	cfg = configManager.getConfig();                // dùng chung suốt chương trình
+    	selectedGamePath = cfg.gamePath;
 
-    	// === Khởi tạo Image icon đúng cách ===
+    	// Load ngôn ngữ
+    	String langCode = (cfg.language != null && !cfg.language.isEmpty()) ? cfg.language : "vi";
+    	I18n.load(getClass(), "luna", new Locale(langCode));
+
+    	// === Khởi tạo Image icon ===
     	titleIcon = new Image(getClass().getResource("/resources/icons.png").toExternalForm());
     	stage.getIcons().add(titleIcon);
 
@@ -551,7 +585,7 @@ public class Main extends Application {
     	overlayLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
     	overlay.getChildren().add(overlayLabel);
 
-    	// === TOP: Window controls ===
+    	// === TOP BAR ===
     	HBox topBar = new HBox();
     	topBar.setPadding(new Insets(10));
     	topBar.setSpacing(10);
@@ -564,34 +598,28 @@ public class Main extends Application {
     	Button close = new Button(I18n.get("window.close"));
     	close.getStyleClass().add("window-control");
     	close.setOnAction(e -> {
-    	    // ScaleTransition gốc
+    	    // close animation giữ nguyên
     	    ScaleTransition scale = new ScaleTransition(Duration.millis(350), root);
     	    scale.setToX(0);
     	    scale.setToY(0);
     	    scale.setInterpolator(Interpolator.EASE_IN);
 
-    	    // FadeTransition gốc
     	    FadeTransition fade = new FadeTransition(Duration.millis(350), root);
     	    fade.setToValue(0);
     	    fade.setInterpolator(Interpolator.EASE_OUT);
 
-    	    // TranslateTransition gốc
     	    TranslateTransition slide = new TranslateTransition(Duration.millis(350), root);
     	    slide.setToY(200);
     	    slide.setInterpolator(Interpolator.EASE_IN);
 
-    	    // --------- Viền bo góc ---------
     	    Rectangle border = new Rectangle(root.getWidth(), root.getHeight());
-    	    border.setArcWidth(20);   // bo góc X
-    	    border.setArcHeight(20);  // bo góc Y
+    	    border.setArcWidth(20);
+    	    border.setArcHeight(20);
     	    border.setFill(Color.TRANSPARENT);
     	    border.setStroke(Color.DARKBLUE);
     	    border.setStrokeWidth(3);
-
-    	    // Thêm vào root (hoặc overlay pane)
     	    root.getChildren().add(border);
 
-    	    // Animate viền fade + shrink
     	    Timeline borderAnim = new Timeline(
     	        new KeyFrame(Duration.ZERO,
     	            new KeyValue(border.strokeWidthProperty(), 3),
@@ -603,7 +631,6 @@ public class Main extends Application {
     	        )
     	    );
 
-    	    // --------- Kết hợp tất cả ---------
     	    ParallelTransition pt = new ParallelTransition(scale, fade, slide, borderAnim);
     	    pt.setOnFinished(ev -> stage.close());
     	    pt.play();
@@ -612,11 +639,11 @@ public class Main extends Application {
     	topBar.getChildren().addAll(minimize, close);
     	layout.setTop(topBar);
 
-    	// === PAGES container (center) ===
+    	// === PAGES ===
     	StackPane pagesContainer = new StackPane();
     	pagesContainer.setPrefSize(800, 400);
 
-    	// --- Home page ---
+    	// === HOME PAGE ===
     	VBox homePage = new VBox(20);
     	homePage.setAlignment(Pos.CENTER);
     	homePage.setPadding(new Insets(20));
@@ -630,15 +657,19 @@ public class Main extends Application {
     	Button playButton = new Button(I18n.get("menu.play"));
     	playButton.getStyleClass().add("play-button");
 
+    	// Version list
     	versionSelect = new ComboBox<>();
-    	versionSelect.setItems(FXCollections.observableArrayList(minecraftLauncher.fetchAvailableVersions()));
-    	if (cfg.lastVersion != null && versionSelect.getItems().contains(cfg.lastVersion)) {
-    	    versionSelect.setValue(cfg.lastVersion); // Chọn version đã lưu
-    	} else if (!versionSelect.getItems().isEmpty()) {
-    	    versionSelect.setValue(versionSelect.getItems().get(0)); // Mặc định chọn version đầu tiên
-    	}
-    	versionSelect.setPromptText(I18n.get("menu.selectversion"));
+    	versionSelect.setItems(FXCollections.observableArrayList(
+    	        minecraftLauncher.fetchAvailableVersions()
+    	));
 
+    	if (cfg.lastVersion != null && versionSelect.getItems().contains(cfg.lastVersion)) {
+    	    versionSelect.setValue(cfg.lastVersion);
+    	} else if (!versionSelect.getItems().isEmpty()) {
+    	    versionSelect.setValue(versionSelect.getItems().get(0));
+    	}
+
+    	versionSelect.setPromptText(I18n.get("menu.selectversion"));
 
     	versionSelect.setButtonCell(new ListCell<String>() {
     	    @Override
@@ -654,32 +685,39 @@ public class Main extends Application {
     	    }
     	});
 
+    	// ===== FIX CHÍNH TẠI ĐÂY — UPDATE CONFIG ĐÚNG INSTANCE =====
     	versionSelect.valueProperty().addListener((obs, oldVal, newVal) -> {
-    		 if (newVal == null) return;
+    	    if (newVal == null) return;
 
-    		    // Cập nhật config
-    		    cfg.lastVersion = newVal;
-    		    configManager.save(); // ghi vào file config
+    	    cfg.lastVersion = newVal;            // update config shared
+    	    configManager.save();                // save đúng instance
 
-    		    boolean installed = MinecraftLauncher.isVersionInstalled(newVal);
-    		    boolean fullLicense = AuthManager.hasFullLicense();
+    	    boolean installed = MinecraftLauncher.isVersionInstalled(newVal);
+    	    boolean fullLicense = AuthManager.hasFullLicense();
 
-    		    String buttonText;
-    		    if (fullLicense) {
-    		        buttonText = installed ? I18n.get("menu.play") : I18n.get("menu.installandplay");
-    		    } else {
-    		        buttonText = installed ? I18n.get("menu.playdemo") : I18n.get("menu.installandplaydemo");
-    		    }
-    		    playButton.setText(buttonText);
-    		    configManager.save();
+    	    String buttonText;
+    	    if (fullLicense) {
+    	        buttonText = installed ? I18n.get("menu.play") : I18n.get("menu.installandplay");
+    	    } else {
+    	        buttonText = installed ? I18n.get("menu.playdemo") : I18n.get("menu.installandplaydemo");
+    	    }
+    	    playButton.setText(buttonText);
     	});
 
-    	playButton.setOnAction(e -> {
-    	    ConfigManager cfgMgr = new ConfigManager();
-    	    LauncherConfig cfg = cfgMgr.getConfig();
 
-    	    UserProfile user = cfg.users.isEmpty() ? null : cfg.users.get(0); // lấy user đầu tiên nếu có
-    	    String selectedVersion = cfg.lastVersion != null ? cfg.lastVersion : versionSelect.getValue();
+    	// ======== PLAY BUTTON ========
+    	playButton.setOnAction(e -> {
+
+    	    // ❌ XÓA: ConfigManager cfgMgr = new ConfigManager();
+    	    // ❌ XÓA: LauncherConfig cfg = cfgMgr.getConfig();
+
+    	    // ✔ DÙNG CÙNG INSTANCE
+    	    LauncherConfig cfg = configManager.getConfig();
+
+    	    UserProfile user = cfg.users.isEmpty() ? null : cfg.users.get(0);
+    	    String selectedVersion = (cfg.lastVersion != null)
+    	            ? cfg.lastVersion
+    	            : versionSelect.getValue();
 
     	    if (selectedVersion == null) {
     	        MessageBox.showError(I18n.get("alert.selectversion"));
@@ -690,8 +728,9 @@ public class Main extends Application {
     	    loading.show();
 
     	    if (user != null) {
-    	        // --- User đã lưu, auto-launch ---
+    	        // Auto-launch giữ nguyên
     	        UserProfile finalUser = user;
+
     	        new Thread(() -> {
     	            MinecraftLauncher.Session session;
 
@@ -705,20 +744,15 @@ public class Main extends Application {
     	                boolean installed = MinecraftLauncher.isVersionInstalled(selectedVersion);
     	                boolean full = AuthManager.getCurrentAccount().isFullLicense();
 
-    	                if (MinecraftLauncher.isLegacyVersion(selectedVersion)) {
-    	                    playButton.setText(installed
-    	                            ? I18n.get("menu.playlegacy")
-    	                            : I18n.get("menu.installandplaylegacy"));
-    	                } else {
-    	                    playButton.setText(installed
-    	                            ? (full ? I18n.get("menu.play") : I18n.get("menu.playdemo"))
-    	                            : (full ? I18n.get("menu.installandplay") : I18n.get("menu.installandplaydemo")));
-    	                }
+    	            
+    	                playButton.setText(installed
+    	                        ? (full ? I18n.get("menu.play") : I18n.get("menu.playdemo"))
+    	                        : (full ? I18n.get("menu.installandplay") : I18n.get("menu.installandplaydemo")));
     	            });
 
     	            try {
     	                MinecraftLauncher.launch(selectedVersion, session,
-    	                    (progress, status) -> Platform.runLater(() -> loading.setProgress(progress, status)));
+    	                        (progress, status) -> Platform.runLater(() -> loading.setProgress(progress, status)));
     	                Platform.runLater(loading::hide);
     	                Platform.runLater(this::showOverlay);
     	            } catch (Exception ex) {
@@ -731,13 +765,15 @@ public class Main extends Application {
     	        }).start();
 
     	    } else {
-    	        // --- Chưa có user, hiển thị LoginAuthBox ---
+
+    	        // ===== LOGIN AUTH BOX =====
     	        Platform.runLater(() -> {
     	            LoginAuthBox.show((method, data) -> {
     	                new Thread(() -> {
     	                    MinecraftLauncher.Session session;
     	                    UserProfile newUser;
 
+    	                    // Login methods giữ nguyên
     	                    switch (method) {
     	                        case "offline" -> {
     	                            session = AuthManager.loginOffline(data);
@@ -763,46 +799,89 @@ public class Main extends Application {
     	                        }
     	                    }
 
-    	                    // Lưu user mới vào config
-    	                    cfgMgr.addOrUpdateUser(newUser);
+    	                    // ===== FIX CHÍNH TẠI ĐÂY =====
+    	                    configManager.addOrUpdateUser(newUser);     // dùng 1 instance
     	                    cfg.lastVersion = selectedVersion;
-    	                    cfgMgr.save();
+    	                    configManager.save();                        // SAVE CHUẨN
 
     	                    Platform.runLater(() -> {
     	                        boolean installed = MinecraftLauncher.isVersionInstalled(selectedVersion);
     	                        boolean full = AuthManager.getCurrentAccount().isFullLicense();
 
-    	                        if (MinecraftLauncher.isLegacyVersion(selectedVersion)) {
-    	                            playButton.setText(installed
-    	                                    ? I18n.get("menu.playlegacy")
-    	                                    : I18n.get("menu.installandplaylegacy"));
-    	                        } else {
-    	                            playButton.setText(installed
-    	                                    ? (full ? I18n.get("menu.play") : I18n.get("menu.playdemo"))
-    	                                    : (full ? I18n.get("menu.installandplay") : I18n.get("menu.installandplaydemo")));
-    	                        }
+    	                        playButton.setText(installed
+    	                                ? (full ? I18n.get("menu.play") : I18n.get("menu.playdemo"))
+    	                                : (full ? I18n.get("menu.installandplay") : I18n.get("menu.installandplaydemo")));
     	                    });
 
     	                    try {
-    	                        MinecraftLauncher.launch(selectedVersion, session,
-    	                            (progress, status) -> Platform.runLater(() -> loading.setProgress(progress, status)));
+    	                        MinecraftLauncher.launch(
+    	                            selectedVersion,
+    	                            session,
+    	                            (progress, status) ->
+    	                                Platform.runLater(() -> loading.setProgress(progress, status))
+    	                        );
+
     	                        Platform.runLater(loading::hide);
     	                        Platform.runLater(this::showOverlay);
-    	                    } catch (Exception ex) {
+    	                    } catch (Throwable ex) {
     	                        ex.printStackTrace();
+
+    	                        // === TLauncher-style error resolving ===
+    	                        String errorMessage;
+
+    	                        if (ex instanceof UnsupportedClassVersionError) {
+    	                            // Java quá cũ
+    	                            errorMessage = I18n.get(
+    	                                "alert.java.too_old",
+    	                                selectedVersion
+    	                            );
+    	                        }
+    	                        else if (ex instanceof NoClassDefFoundError
+    	                              || ex instanceof ClassNotFoundException) {
+
+    	                            String msg = ex.getMessage() != null ? ex.getMessage() : "";
+
+    	                            if (msg.contains("lwjgl")) {
+    	                                errorMessage = I18n.get("alert.lwjgl.missing");
+    	                            } else {
+    	                                errorMessage = I18n.get("alert.class.missing", msg);
+    	                            }
+    	                        }
+    	                        else if (ex instanceof IOException) {
+    	                            errorMessage = I18n.get(
+    	                                "alert.ioerror",
+    	                                ex.getMessage()
+    	                            );
+    	                        }
+    	                        else {
+    	                            // fallback – tránh message null
+    	                            String msg = ex.getMessage();
+    	                            if (msg == null || msg.isBlank()) {
+    	                                msg = ex.getClass().getSimpleName();
+    	                            }
+    	                            errorMessage = I18n.get(
+    	                                "alert.launchfail",
+    	                                selectedVersion,
+    	                                msg
+    	                            );
+    	                        }
+
+    	                        String finalError = errorMessage;
+
     	                        Platform.runLater(() -> {
     	                            loading.hide();
-    	                            MessageBox.showError(I18n.get("alert.launchfail", selectedVersion, ex.getMessage()));
+    	                            MessageBox.showError(finalError);
     	                        });
     	                    }
     	                }).start();
     	            });
+
     	            LoginAuthBox.setOnCancel(() -> loading.hide());
     	        });
     	    }
     	});
 
-
+    	// === ADD TO LAYOUT ===
     	playBox.getChildren().addAll(playIcon, playButton, versionSelect);
     	homePage.getChildren().add(playBox);
 
@@ -1155,7 +1234,8 @@ public class Main extends Application {
         generalSettingsGrid.add(nowPlayingBtn, 4, rowGeneral + 1);
         
         nowPlayingBtn.setOnAction(e -> {
-        	NowPlayingDialog.show("?", "?", "?");
+        	DebugConsoleBox.show();
+        	DebugConsoleBox.append("Test Console  ");
         });
 
         // === Auto Update ===
@@ -1562,9 +1642,8 @@ public class Main extends Application {
     	        commandLine.add("--offlineSkin"); commandLine.add(targetSkin.getAbsolutePath());
 
     	        // Lưu vào config
-    	        LauncherConfig config = new LauncherConfig();
-    	        config.lastCommandLine = commandLine;
-    	        config.save();
+    	        cfg.lastCommandLine = commandLine;
+    	        configManager.save();
 
     	        //showAlert("Success", "Skin injected successfully!");
     	    } catch (Exception ex) {
@@ -1907,62 +1986,76 @@ public class Main extends Application {
                     stage.setTitle(I18n.get("app.title"));
 
                     // ==== Kiểm tra thư mục Extensions ====
-                    Path extDir;
+                    //Path extDir;
                     String os = System.getProperty("os.name").toLowerCase();
                     String userHome = System.getProperty("user.home");
 
                     try {
+                        Path extDir;
+
+                        // Xác định thư mục Extensions
                         if (os.contains("win")) {
                             extDir = Paths.get(System.getenv("APPDATA"), ".luna", "Extensions");
                         } else {
-                            extDir = Paths.get(userHome, ".luna", "Extensions");
+                            extDir = Paths.get(System.getProperty("user.home"), ".luna", "Extensions");
                         }
-                        if (!Files.exists(extDir)) Files.createDirectories(extDir);
 
-                        logInstance.info("Quét folder Extensions: " + extDir);
+                        if (!Files.exists(extDir)) {
+                            Files.createDirectories(extDir);
+                            logInstance.info("Tạo mới thư mục Extensions: " + extDir);
+                        }
 
+                        logInstance.info("Đang quét folder Extensions: " + extDir);
+
+                        // Lọc các file .jar trong thư mục
                         List<Path> uiJars;
                         try (Stream<Path> files = Files.list(extDir)) {
                             uiJars = files.filter(f -> f.toString().endsWith(".jar")).collect(Collectors.toList());
                         }
 
-                        if (!uiJars.isEmpty()) {
+                        if (uiJars.isEmpty()) {
+                            logInstance.warn("Không tìm thấy UI Pack .jar trong Extensions (sử dụng giao diện mặc định).");
+                        } else {
+                            // Lấy jar đầu tiên
                             Path jarPath = uiJars.get(0);
-                            logInstance.info("Load UI Pack jar: " + jarPath.getFileName());
+                            logInstance.info("Đang load UI Pack: " + jarPath.getFileName());
 
                             UIPackLoader loader = new UIPackLoader(jarPath.toFile());
-                            String layoutClassName = "ui.DefaultLayout";
+                            String layoutClassName = "your.name.extension.pack.YourClass";
 
-                            try {
-                                URLClassLoader cl = loader.getClassLoader();
+                            try (URLClassLoader cl = loader.getClassLoader()) {
                                 for (String cn : findClassesInJar(jarPath)) {
-                                    Class<?> clazz = cl.loadClass(cn);
-                                    if (clazz.isAnnotationPresent(UiPackFiles.class)) {
-                                        UiPackFiles ann = clazz.getAnnotation(UiPackFiles.class);
-                                        layoutClassName = ann.layoutClass();
-                                        logInstance.info("Found layout class in jar: " + layoutClassName);
-                                        break;
+                                    try {
+                                        Class<?> clazz = cl.loadClass(cn);
+                                        if (clazz.isAnnotationPresent(UiPackFiles.class)) {
+                                            UiPackFiles ann = clazz.getAnnotation(UiPackFiles.class);
+                                            layoutClassName = ann.layoutClass();
+                                            logInstance.info("Found layout class: " + layoutClassName + " in " + jarPath.getFileName());
+                                            break;
+                                        }
+                                    } catch (Throwable t) {
+                                        logInstance.debug("Bỏ qua class không hợp lệ: " + cn + " (" + t.getMessage() + ")");
                                     }
                                 }
                             } catch (Exception ex) {
                                 logInstance.warn("Không thể load layout class từ jar: " + ex.getMessage());
                             }
 
-                            Parent layoutRoot = loader.loadLayout(layoutClassName);
-                            if (layoutRoot != null) {
-                                root.getChildren().add(layoutRoot);
-                                logInstance.info("Layout root đã thêm vào Scene.");
+                            // Chỉ load layout để có side-effect, không cần gán layoutRoot
+                            try {
+                                loader.loadLayout(layoutClassName);
+                                logInstance.info("UI Pack layout đã được load (không thêm vào Scene).");
+                            } catch (Exception ex) {
+                                logInstance.warn("Không thể load layout từ UI Pack: " + ex.getMessage());
                             }
-
-                        } else {
-                            logInstance.warn("Không tìm thấy UI Pack jar trong Extensions (launcher sẽ dùng giao diện mặc định).");
                         }
 
                     } catch (IOException ioEx) {
-                        logInstance.error("Lỗi khi đọc folder Extensions: " + ioEx.getMessage());
+                        logInstance.error("Lỗi IO khi đọc Extensions: " + ioEx.getMessage());
                     } catch (Exception e1) {
-                        e1.printStackTrace();
+                        logInstance.error("Lỗi không xác định khi load UI Pack: " + e1.getMessage(), e1);
                     }
+
 
                     // ==== Luôn có hiệu ứng tuyết (không phụ thuộc UIPack) ====
                     logInstance.info("Khởi tạo hiệu ứng tuyết mặc định...");
@@ -1995,9 +2088,9 @@ public class Main extends Application {
                     
                    
                     
-                 // === FIREWORK OVERLAY FOR LUNALAUNCHER 0.0.04 ===
+                    // === FIREWORK OVERLAY FOR LUNALAUNCHER 0.0.04 ===
 
-                    Canvas fireCanvas = new Canvas();
+                    /*Canvas fireCanvas = new Canvas();
                     fireCanvas.setMouseTransparent(true);
                     fireCanvas.widthProperty().bind(scene.widthProperty());
                     fireCanvas.heightProperty().bind(scene.heightProperty());
@@ -2101,13 +2194,15 @@ public class Main extends Application {
                     double launchInterval = 700;
 
                     // Animation Timer
+                    long[] lastClear = {0}; // để track lần clear cuối cùng
+                    int clearRectTime = 60; // khoảng cách thời gian clearCanvas
                     AnimationTimer fireTimer = new AnimationTimer() {
                         @Override
                         public void handle(long now) {
                             double w = fireCanvas.getWidth(), h = fireCanvas.getHeight();
                             long current = System.currentTimeMillis();
 
-                            // Tạo rocket mới
+                            // --- Spawn Rocket mới ---
                             if(current - lastLaunch[0] > launchInterval + rand.nextInt(1000)) {
                                 double startX = w/4 + rand.nextDouble()*(w/2);
                                 Color c = palette[rand.nextInt(palette.length)];
@@ -2115,15 +2210,15 @@ public class Main extends Application {
                                 lastLaunch[0] = current;
                             }
 
-                            // Fade canvas mờ → tạo trail
-                            fg.setGlobalAlpha(0.2);
-                            fg.setGlobalBlendMode(BlendMode.SRC_OVER);
-                            fg.setFill(Color.rgb(0, 0, 0, 0.8));
-                            fg.clearRect(0, 0, w, h); // xóa pixel cũ nhưng vẫn trong suốt
-                            fg.setGlobalAlpha(1.0);
+                            // --- Clear canvas mỗi 200ms ---
+                            if(current - lastClear[0] > clearRectTime) {
+                                fg.setGlobalAlpha(1.0);
+                                fg.setGlobalBlendMode(BlendMode.SRC_OVER);
+                                fg.clearRect(0, 0, w, h); // vẫn transparent
+                                lastClear[0] = current;
+                            }
 
-
-                            // Cập nhật rocket
+                            // --- Update Rockets ---
                             Iterator<Rocket> itR = rockets.iterator();
                             while(itR.hasNext()) {
                                 Rocket r = itR.next();
@@ -2137,24 +2232,399 @@ public class Main extends Application {
                                 }
                             }
 
-                            // Cập nhật firework
+                            // --- Update Fireworks ---
                             fireworks.removeIf(f -> !f.updateAndDraw(fg));
+                        }
+                    };*/
+                    // Đảm bảo khai báo Random rand ở phạm vi có thể truy cập
+                    //Random rand = new Random(); 
+
+                    Canvas fireCanvas = new Canvas();
+                    fireCanvas.setMouseTransparent(true);
+                    // Scene là đối tượng Scene của bạn
+                    fireCanvas.widthProperty().bind(scene.widthProperty()); 
+                    fireCanvas.heightProperty().bind(scene.heightProperty());
+                    GraphicsContext fg = fireCanvas.getGraphicsContext2D();
+
+                    double gravity = 0.6;
+                    int particlesPerExplosion = 70;
+                    Color[] palette = {
+                        Color.web("#ffe6a7"), Color.web("#fbb8c0"), 
+                        Color.web("#80ffb0"), Color.web("#a7ccff"), 
+                        Color.web("#ffb3ff")
+                    };
+
+                    // --- Trail particle riêng ---
+                    class TrailParticle {
+                        double x, y;
+                        double alpha;
+                        Color color;
+                        TrailParticle(double x, double y, Color color) { 
+                            this.x=x; this.y=y; this.alpha=1.0; this.color=color; 
+                        }
+                        boolean update() {
+                            alpha -= 0.15; // fade nhanh hơn = trail mượt cho rocket
+                            return alpha > 0;
+                        }
+                        void draw(GraphicsContext g) {
+                            g.setGlobalAlpha(alpha);
+                            g.setFill(color);
+                            g.fillOval(x, y, 3, 3);
+                        }
+                    }
+
+                    // --- Rocket ---
+                    /*class Rocket {
+                        double x, y, vx, vy;
+                        Color color;
+                        boolean rising = true;
+                        List<TrailParticle> trail = new ArrayList<>();
+
+                        Rocket(double startX, Color color) {
+                            this.x=startX; this.y=fireCanvas.getHeight(); this.color=color;
+                            this.vy = -(8 + rand.nextDouble()*2);
+                            this.vx = (rand.nextDouble()-0.5)*1.5;
+                        }
+
+                        int update(double w, double h) {
+                            vy += gravity*0.1;
+                            x += vx*0.7; y += vy*0.7;
+
+                            // spawn trail particle
+                            trail.add(new TrailParticle(x, y, color));
+
+                            // update trail particle
+                            Iterator<TrailParticle> it = trail.iterator();
+                            while(it.hasNext()) {
+                                if(!it.next().update()) it.remove();
+                            }
+
+                            if(rising && vy>=0){ rising=false; return 1; }
+                            if(y<-20 || x<-50 || x>w+50) return 2;
+                            return 0;
+                        }
+
+                        void draw(GraphicsContext g){
+                            for(TrailParticle t: trail) t.draw(g);
+                            g.setGlobalAlpha(1.0);
+                            g.setFill(color);
+                            g.fillOval(x-0.1, y-1, 3,3);
+                        }
+                    }*/
+                 // --- Rocket ---
+                    class Rocket {
+                        double x, y, vx, vy;
+                        Color color;
+                        boolean rising = true;
+                        List<TrailParticle> trail = new ArrayList<>();
+
+                        Rocket(double startX, Color color) {
+                            // >>> KHẮC PHỤC Ở ĐÂY: Thiết lập vị trí Y mới <<<
+                            double navBarHeight = 70.0; // Ước tính chiều cao của thanh Navigation Bar (Cần điều chỉnh)
+                            double startY = fireCanvas.getHeight() - navBarHeight;
+                            
+                            this.x=startX; 
+                            this.y=startY; // Rocket khởi tạo ở vị trí phía trên Nav Bar
+                            // ----------------------------------------------
+                            
+                            this.color=color;
+                            this.vy = -(8 + rand.nextDouble()*2);
+                            this.vx = (rand.nextDouble()-0.5)*1.5;
+                        }
+
+                        int update(double w, double h) {
+                            vy += gravity*0.1;
+                            x += vx*0.7; y += vy*0.7;
+
+                            // spawn trail particle
+                            trail.add(new TrailParticle(x, y, color));
+
+                            // update trail particle
+                            Iterator<TrailParticle> it = trail.iterator();
+                            while(it.hasNext()) {
+                                if(!it.next().update()) it.remove();
+                            }
+
+                            if(rising && vy>=0){ rising=false; return 1; }
+                            if(y<-20 || x<-50 || x>w+50) return 2;
+                            return 0;
+                        }
+
+                        void draw(GraphicsContext g){
+                            for(TrailParticle t: trail) t.draw(g);
+                            g.setGlobalAlpha(1.0);
+                            g.setFill(color);
+                            g.fillOval(x-0.1, y-1, 3,3);
+                        }
+                    }
+                    
+                    class FireTrailParticle {
+                        double x, y;
+                        double vx, vy;
+                        double alpha;
+                        double size;
+                        Color color;
+
+                        FireTrailParticle(double x, double y, Color color) {
+                            this.x = x;
+                            this.y = y;
+                            this.color = color;
+
+                            vx = (Math.random() - 0.5) * 0.3;
+                            vy = (Math.random() - 0.5) * 0.3;
+                            alpha = 0.9 + Math.random() * 0.1;
+                            size = 2.0 + Math.random() * 1.2;
+                        }
+
+                        boolean update() {
+                            x += vx;
+                            y += vy;
+                            alpha *= 0.93;
+                            size *= 0.985;
+
+                            return alpha > 0.02;
+                        }
+
+                        void draw(GraphicsContext g) {
+                            g.setGlobalAlpha(alpha);
+                            g.setFill(Color.hsb(
+                                color.getHue(),
+                                color.getSaturation(),
+                                Math.min(1.0, color.getBrightness() * 0.9)
+                            ));
+                            g.fillOval(x, y, size, size);
+                            g.setGlobalAlpha(1.0);
+                        }
+                    }
+
+
+                    class Firework {
+                        double gravity = 0.6;
+                        double airFriction = 0.985;
+                        double x, y;
+                        double[] px, py, vx, vy, alpha;
+                        double[] size;
+                        Color color;
+                        List<FireTrailParticle>[] trails;
+
+                        @SuppressWarnings("unchecked")
+                        Firework(double x, double y, Color color, int count) {
+                            this.x = x; 
+                            this.y = y;
+                            this.color = color;
+
+                            px = new double[count];
+                            py = new double[count];
+                            vx = new double[count];
+                            vy = new double[count];
+                            alpha = new double[count];
+                            size = new double[count];
+                            trails = new List[count];
+
+                            for (int i = 0; i < count; i++) {
+                                double angle = Math.random() * 2 * Math.PI;
+                                double speed = 2.5 + Math.random() * 4.5;
+
+                                vx[i] = Math.cos(angle) * speed;
+                                vy[i] = Math.sin(angle) * speed;
+
+                                px[i] = 0;
+                                py[i] = 0;
+                                alpha[i] = 1.0;
+                                size[i] = 3.5 + Math.random() * 1.5;
+
+                                trails[i] = new ArrayList<>();
+                            }
+                        }
+
+                        boolean updateAndDraw(GraphicsContext g) {
+                            boolean alive = false;
+                            final double GRAVITY = gravity * 0.05;
+
+                            for (int i = 0; i < px.length; i++) {
+                                boolean hasTrail = !trails[i].isEmpty();
+
+                                if (alpha[i] > 0) {
+                                    alive = true;
+
+                                    // vận tốc giảm dần do ma sát + thêm trọng lực
+                                    vx[i] *= airFriction;
+                                    vy[i] *= airFriction;
+                                    vy[i] += GRAVITY;
+
+                                    // rung nhẹ để tự nhiên
+                                    px[i] += vx[i] + (Math.random() - 0.5) * 0.2;
+                                    py[i] += vy[i] + (Math.random() - 0.5) * 0.2;
+
+                                    // fade mềm
+                                    alpha[i] *= 0.95;
+                                    if (alpha[i] < 0.01) alpha[i] = 0;
+
+                                    // sinh trail (thưa hơn để tự nhiên)
+                                    if (Math.random() < 0.6)
+                                        trails[i].add(new FireTrailParticle(x + px[i], y + py[i], color));
+                                }
+
+                                // update + draw trail
+                                Iterator<FireTrailParticle> it = trails[i].iterator();
+                                while (it.hasNext()) {
+                                    FireTrailParticle t = it.next();
+                                    if (!t.update()) it.remove();
+                                    else {
+                                        t.draw(g);
+                                        alive = true;
+                                    }
+                                }
+
+                                // draw hạt chính (star)
+                                if (alpha[i] > 0) {
+                                    double flicker = 0.9 + Math.random() * 0.25;
+                                    double b = Math.min(1.0, Math.max(0.0, color.getBrightness() * flicker));
+
+                                    g.setGlobalAlpha(alpha[i]);
+                                    g.setFill(Color.hsb(color.getHue(), color.getSaturation(), b));
+                                    g.fillOval(x + px[i], y + py[i], size[i], size[i]);
+                                    g.setGlobalAlpha(1.0);
+                                }
+
+                                if (alpha[i] > 0 || hasTrail)
+                                    alive = true;
+                            }
+
+                            return alive;
+                        }
+                    }
+                    // --- Lists ---
+                    List<Rocket> rockets = new ArrayList<>();
+                    List<Firework> fireworks = new ArrayList<>();
+                    long[] lastLaunch={0};
+                    double launchInterval = 700;
+
+                    // --- AnimationTimer (Đã CHỈNH SỬA để xóa canvas mờ bằng màu TRONG SUỐT) ---
+                    AnimationTimer fireTimer = new AnimationTimer() {
+                        @Override
+                        public void handle(long now) {
+                            double w=fireCanvas.getWidth(), h=fireCanvas.getHeight();
+                            long current = System.currentTimeMillis();
+
+                            // ** KHẮC PHỤC LỖI TRAIL và LỖI GUI MỜ **
+                            // 1. Đặt độ mờ thấp cho thao tác xóa (ví dụ: 10%)
+                            fg.setGlobalAlpha(0.05); 
+                            // 2. Sử dụng Color.TRANSPARENT để không làm mờ nền GUI
+                            fg.setFill(Color.TRANSPARENT); 
+                            // 3. Xóa canvas. clearRect + Transparent fill tạo hiệu ứng fade out mượt mà.
+                            fg.clearRect(0, 0, w, h); 
+                            
+                            // Trả lại độ mờ mặc định cho các đối tượng vẽ tiếp theo
+                            fg.setGlobalAlpha(1.0); 
+
+
+                            // Logic Pháo Hoa
+                            if(current-lastLaunch[0] > launchInterval+rand.nextInt(1000)){
+                                rockets.add(new Rocket(w/4 + rand.nextDouble()*(w/2), palette[rand.nextInt(palette.length)]));
+                                lastLaunch[0]=current;
+                            }
+
+                            // Rocket logic
+                            Iterator<Rocket> itR = rockets.iterator();
+                            while(itR.hasNext()){
+                                Rocket r = itR.next();
+                                r.draw(fg);
+                                int status = r.update(w,h);
+                                if(status==1){ fireworks.add(new Firework(r.x,r.y,r.color,particlesPerExplosion)); itR.remove(); }
+                                else if(status==2) itR.remove();
+                            }
+
+                            // Firework logic
+                            fireworks.removeIf(f->!f.updateAndDraw(fg));
                         }
                     };
 
+                    // Khởi động AnimationTimer
+                    // fireTimer.start();
+                    
+                    LocalDate today = LocalDate.now();
+                    String key = today.getDayOfMonth() + "-" + today.getMonthValue();
+
                     stage.setOnShown(ev2 -> {
-                        root.getChildren().addAll(snowCanvas, fireCanvas);
-                        logInstance.info("Snow overlay canvas attached (default).");
+                        try {
+                            // Gắn các canvas (tuyết + pháo hoa) lên giao diện
+                            root.getChildren().addAll(snowCanvas, fireCanvas);
+                            logInstance.info("Snow overlay canvas attached (default).");
 
-                        FadeTransition fadeIn = new FadeTransition(Duration.millis(600), root);
-                        fadeIn.setFromValue(0);
-                        fadeIn.setToValue(1);
-                        fadeIn.setInterpolator(Interpolator.EASE_BOTH);
-                        fadeIn.play();
+                            // Hiệu ứng mờ dần vào (fade in)
+                            FadeTransition fadeIn = new FadeTransition(Duration.millis(600), root);
+                            fadeIn.setFromValue(0);
+                            fadeIn.setToValue(1);
+                            fadeIn.setInterpolator(Interpolator.EASE_BOTH);
+                            fadeIn.play();
 
-                        showNotification(root, I18n.get("nof.expiredlicense"), 3000);
-                        fireTimer.start();
-                        logInstance.info("Snow overlay animation started.");
+                            // Bắt đầu hiệu ứng tuyết và pháo hoa (nếu có)
+                            if (snowTimer != null) {
+                            	if (key == "1-1") {
+                            		fireTimer.start();
+                            	}
+                            	else {
+                            		snowTimer.start();
+                            	}                       
+                                logInstance.info("Snow overlay animation started.");
+                            }
+                            else {
+                                logInstance.warn("Firework timer not initialized — skipping animation start.");
+                            }
+                            
+                         // === Thêm NowPlayingBox ===
+                         // === Now Playing Box ===
+                            /*NowPlayingBox nowPlayingBox = new NowPlayingBox(root);
+                            nowPlayingBox.update("Track 01 - Example Song", 0.0); // Giá trị demo
+                            logInstance.info("NowPlayingBox initialized.");
+
+                            // === Countdown Box ===
+                            // Tự động lấy năm hiện tại
+                            LocalDate today = LocalDate.now();
+                            int currentYear = today.getYear();
+                            LocalDateTime newYearEve = LocalDateTime.of(currentYear, 12, 31, 23, 59, 59);
+
+                            // Tạo CountdownBox
+                            CountdownBox countdownBox = new CountdownBox(root, newYearEve);
+
+                            // Tính vị trí lần đầu
+                            double marginRight = 180;
+                            double marginBottom = 0;
+
+                            double popupX = root.getScene().getWindow().getX() + root.getScene().getWidth() - countdownBox.getWidth() - marginRight;
+                            double popupY = root.getScene().getWindow().getY() + root.getScene().getHeight() - countdownBox.getHeight() - marginBottom;
+                            countdownBox.setPosition(popupX, popupY);
+
+                            // Cập nhật khi resize cửa sổ
+                            root.widthProperty().addListener((obs, oldVal, newVal) -> {
+                                countdownBox.setX(root.getScene().getWindow().getX() + newVal.doubleValue() - countdownBox.getWidth() - marginRight);
+                            });
+                            root.heightProperty().addListener((obs, oldVal, newVal) -> {
+                                countdownBox.setY(root.getScene().getWindow().getY() + newVal.doubleValue() - countdownBox.getHeight() - marginBottom);
+                            });
+
+
+                            //countdownBox.show(); // thay vì start(), giả sử show() bắt đầu hiển thị và đếm ngược
+                            //countdownBox.updateCountDown();
+                            logInstance.info("CountdownBox initialized with endTime: {}", newYearEve);
+                            logInstance.info("CountdownBox started.");*/
+
+                            // Thông báo hiện ra khi mở cửa sổ (license hết hạn hoặc thông báo hệ thống)
+                            //showNotification(root, I18n.get("nof.expiredlicense"), 3000);
+
+                            // Nếu có AppUpdater thì kiểm tra bản cập nhật sau khi UI sẵn sàng
+                            Platform.runLater(() -> {
+                                try {
+                                    AppUpdater.checkForUpdate(AppInfo.VERSION);
+                                } catch (Exception eIn) {
+                                    logInstance.error("Updater check failed: {}", eIn.getMessage(), eIn);
+                                }
+                            });
+
+                        } catch (Exception e2) {
+                            logInstance.error("Error in stage OnShown event: {}", e2.getMessage(), e2);
+                        }
                     });
 
                     stage.show();
@@ -2183,93 +2653,90 @@ public class Main extends Application {
         //this.addButtonAnimation(addSkinBtn);
     }
     
-    // Đặt phương thức này trong Class chứa cấu hình Setting của bạn
     public VBox createAboutContent(HostServices hostServices) {
-        // 1. Container chính VBox (khoảng cách 10 giữa các phần tử)
-        VBox content = new VBox(10); 
 
-        // 2. Thêm Header (Logo + Tiêu đề + Bản quyền)
+        final String NL = System.lineSeparator();
+        final String WEBSITE_URL = I18n.get("about.website.url");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+
+        // Header
         HBox header = this.createAboutHeader();
-        
-        // 3. Thông tin Phiên bản và Mô tả
-        final String GMAIL_SUPPORT_EMAIL = "tranhoang2009vqht@gmail.com"; // ĐỊA CHỈ EMAIL RIÊNG CỦA BẠN
-        final String WEBSITE_URL = "https://pmgdev64.github.io/lunaLauncher";
 
-        // Thông tin cơ bản
+        // Version info
         Label versionInfo = new Label(
-            "Phiên bản: 0.0.03 (Build: 1026)\n" +
-            "Tác giả: PmgDev64/PmgTeam\n" +
-            "Phát hành: Năm 2025 (Thuộc Series BetaTest)"
+            I18n.get("about.version") + " " + launcherVersion + " (Build: 1213)" + NL +
+            I18n.get("about.author") + NL +
+            I18n.get("about.release")
         );
+        versionInfo.setWrapText(true);
         versionInfo.setTextFill(Color.web("#E0E0E0"));
-        
-        // Mô tả
-        Label descriptionTitle = new Label("Mô tả:");
-        // Lưu ý: Font "Comic Relief" có thể không có sẵn trên mọi hệ thống.
-        descriptionTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14)); 
+
+        // Description
+        Label descriptionTitle = new Label("About:");
+        descriptionTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14));
         descriptionTitle.setTextFill(Color.web("#C3E88D"));
 
-        Label description = new Label(
-            "LunaLauncher là công cụ khởi chạy cao cấp được thiết kế để tối ưu hóa trải nghiệm Game/Ứng dụng của bạn. " +
-            "Chúng tôi cung cấp khả năng tùy chỉnh sâu, quản lý mod dễ dàng và hiệu suất ổn định."
-        );
+        Label description = new Label(String.join(NL + NL,
+            I18n.get("about.info1"),
+            I18n.get("about.info2"),
+            I18n.get("about.info3")
+        ));
         description.setWrapText(true);
         description.setTextFill(Color.web("#E0E0E0"));
 
-        // Bản quyền và Giấy phép
-        Label licenseTitle = new Label("Giấy Phép");
+        // License & Credits
+        Label licenseTitle = new Label(I18n.get("about.license"));
         licenseTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14));
         licenseTitle.setTextFill(Color.web("#C3E88D"));
 
         Label licenseText = new Label(
-            "Ứng dụng này sử dụng các thư viện mã nguồn mở, bao gồm:\n" +
-            "  - Log4j2 (Apache License 2.0)\n" +
-            "  - JavaFX (GPLv2 with Classpath Exception)\n" +
-            "  - [Thư viện khác...]"
+            I18n.get("about.credits") + NL +
+            "- " + I18n.get("about.lib.minecraft") + NL +
+            "- " + I18n.get("about.lib.jre") + NL +
+            "- " + I18n.get("about.lib.gson") + NL +
+            "- " + I18n.get("about.lib.apache") + NL +
+            "- " + I18n.get("about.lib.other")
         );
+        licenseText.setWrapText(true);
         licenseText.setTextFill(Color.web("#E0E0E0"));
-        
-        // ------------------------------------------------------------------
-        // 4. Liên hệ (SỬ DỤNG HYPERLINK)
-        // ------------------------------------------------------------------
 
-        // 4a. Liên kết Trang web (Có thể click được)
-        Hyperlink websiteLink = new Hyperlink(WEBSITE_URL.replace("https://", "")); // Hiển thị URL không có https://
-        websiteLink.setTextFill(Color.web("#4DB6AC")); 
-        websiteLink.setFont(Font.font("Comic Relief", 12));
+        // Website
+        Label websiteTitle = new Label(I18n.get("about.website"));
+        websiteTitle.setFont(Font.font("Comic Relief", FontWeight.BOLD, 14));
+        websiteTitle.setTextFill(Color.web("#C3E88D"));
+
+        Hyperlink websiteLink = new Hyperlink(WEBSITE_URL.replace("https://", ""));
+        websiteLink.setTextFill(Color.web("#4DB6AC"));
         websiteLink.setOnAction(e -> {
             if (hostServices != null) {
                 hostServices.showDocument(WEBSITE_URL);
             }
         });
-        
-        // 4b. Email Hỗ trợ (Label)
-        Label emailLabel = new Label("Hỗ trợ: " + GMAIL_SUPPORT_EMAIL);
-        emailLabel.setTextFill(Color.web("#4DB6AC"));
-        emailLabel.setFont(Font.font("Comic Relief", 12));
 
-        // 4c. Container cho Liên hệ
-        VBox contactContainer = new VBox(0); 
-        contactContainer.getChildren().addAll(
-            new Label("Trang web:"), websiteLink, 
-            emailLabel
+        // Support
+        Label supportLabel = new Label(
+            I18n.get("about.support") + NL +
+            "- " + I18n.get("about.support.github") + NL +
+            "- " + I18n.get("about.support.community")
         );
-        // ------------------------------------------------------------------
+        supportLabel.setWrapText(true);
+        supportLabel.setTextFill(Color.web("#E0E0E0"));
 
-        // 5. Thêm tất cả các phần tử vào VBox chính
+        VBox contactBox = new VBox(4, websiteTitle, websiteLink, supportLabel);
+
         content.getChildren().addAll(
-            header, 
+            header,
             versionInfo,
-            new Separator(), 
-            
+            new Separator(),
             descriptionTitle,
             description,
-            
+            new Separator(),
             licenseTitle,
             licenseText,
-            
             new Separator(),
-            contactContainer // <<< THAY THẾ contact CŨ
+            contactBox
         );
 
         return content;

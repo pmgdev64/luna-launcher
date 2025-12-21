@@ -1,3 +1,10 @@
+/*
+ * Module: AssetsManager.java
+ * Chức năng: Quản lý các tệp Tài nguyên, hỗ trợ tải về nguồn tài nguyên từ server chính chủ (bản quyền của minecraft thuộc về MojangStudio).
+ * Bản quyền: PmgTeam
+ * Tác giả: PmgDev64
+ * Ngày tạo: chưa xác định
+ */
 package vn.pmgteam.luna;
 
 import org.json.*;

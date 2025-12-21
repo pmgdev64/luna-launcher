@@ -120,3 +120,29 @@ assets.path=アセットのパス:
 settings.general=一般
 settings.advanced=詳細
 settings.about=情報
+
+# === AboutInfo ===
+about.version=バージョン:
+about.author=開発者: PmgDev64 / PmgTeam
+about.release=リリース日: 2025年12月13日（BetaTestシリーズ最終ビルド）
+
+about.info1=LunaLauncherは、Minecraftのダウンロード、インストール、起動を簡単にし、ゲーム体験を最適化するために設計されたMinecraftランチャーです。
+about.info2=基本的なカスタマイズ機能、簡易的なMOD管理機能、そして安定性を重視したランチャーコアを提供します。
+about.info3=このビルドはベータテスト段階の一部であり、テストおよびフィードバック目的のみで使用されます。
+
+about.license=ライセンス: 未定（ベータテスト段階）
+
+about.credits=クレジット: 本アプリケーションは、以下を含むオープンソースライブラリおよびサードパーティコンポーネントを使用しています:
+
+about.lib.minecraft=Mojang / Microsoft Minecraft ライブラリ
+about.lib.jre=Java Runtime Environment (JRE)
+about.lib.gson=Gson
+about.lib.apache=Apache Commons
+about.lib.other=（その他のオープンソースライブラリ）
+
+about.website=ウェブサイト:
+about.website.url=https://github.com/pngdev64/luna-launcher
+
+about.support=サポート:
+about.support.github=GitHub Issues
+about.support.community=コミュニティからのフィードバックおよびベータテスト

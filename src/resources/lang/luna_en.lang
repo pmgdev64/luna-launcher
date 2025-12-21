@@ -120,3 +120,30 @@ assets.path=Asset Path:
 settings.general=General
 settings.advanced=Advanced
 settings.about=About
+
+# === AboutInfo ===
+about.version=Version:
+about.author=Creator: PmgDev64 / PmgTeam
+about.release=Release: December 13, 2025 (Final Build of BetaTest Series)
+
+about.info1=LunaLauncher is a Minecraft launcher designed to optimize the gaming experience by simplifying the process of downloading, installing, and launching Minecraft.
+about.info2=It provides customizable settings, basic mod management support, and a stable launcher core focused on reliability during gameplay.
+about.info3=This build is part of the beta testing phase and is intended for testing and feedback purposes only.
+
+about.license=License: Not specified (Beta testing phase)
+
+about.credits=Credits: This application uses open-source libraries and third-party components, including:
+
+about.lib.minecraft=Mojang / Microsoft Minecraft libraries
+about.lib.jre=Java Runtime Environment (JRE)
+about.lib.gson=Gson
+about.lib.apache=Apache Commons
+about.lib.other=(and other open-source libraries...)
+
+about.website=Website:
+about.website.url=https://github.com/pngdev64/luna-launcher
+
+about.support=Support:
+about.support.github=GitHub Issues
+about.support.community=Community feedback and beta testing
+
