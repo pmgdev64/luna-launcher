@@ -2,63 +2,44 @@
   <img src="banner4.png" alt="LunaLauncher Banner">
 </div>
 
-# Luna Launcher – Release 0.0.1
+# Luna Launcher – Release 0.0.1 🌙
 
-**Theme:** `NewYearCelebration`  
-**Release date:** 01/01/2026 
+**Theme:** `NewYearCelebration` 🎆  
+**Release date:** 01/01/2026  
 **Author:** PmgDev64 / PepperMCGamers Ch. PmgTeam  
 
 A lightweight, clean, and modern Minecraft launcher with anime-inspired UI.
 
 [![Release](https://img.shields.io/github/v/release/pmgdev64/luna-launcher?style=flat-square)](https://github.com/pmgdev64/luna-launcher/releases)
-[![JavaFX](https://img.shields.io/badge/JavaFX-17-blue?style=flat-square)](https://www.oracle.com/java/technologies/install-javafx-sdk.html)
+[![JavaFX](https://img.shields.io/badge/JavaFX-17-blue?style=flat-square)](https://openjfx.io/)
 [![Status](https://img.shields.io/badge/build-release-blue?style=flat-square)]()
 
 ---
 
-## 🚀 Introduction
+## 🚀 What's New in v0.0.1 (Official Release)
 
-- **Lightweight and easy to use** – optimized for any computer.  
-- **Clean source code** — no Win32 API bindings, no hidden code, no malware.  
-- **Open-source (free version)** — build and test automatically.  
-- **Beta version** — experimental features, winter overlay.  
-- **Premium version (coming soon)** — custom themes, plugin management, cloud sync.
+Đây là phiên bản chính thức đầu tiên đánh dấu sự khởi đầu của **Luna Launcher** trong năm 2026.
 
-> ⚠️ This is a **beta version**. It may contain bugs or missing features. Backup your data before use.
-
----
-
-## ⚙️ Features
-
-### Free / Community version
-
-- Login, download games, version management  
-- Fast updates, simple interface  
-- Transparent, no hidden code  
-- Cross-platform support (Windows, macOS, Linux) — if available  
-
-### Beta-exclusive features (0.0.03)
-
-- Winter overlay `earlyWinter`  
-- New UI Pack system  
-- Experimental GUI effects
-
-### Premium version (coming soon)
-
-- Custom themes/skins  
-- In-depth mod/plugin management  
-- Cloud storage/sync  
-- Priority support/updates  
+### ✨ Key Features
+* **Anime-Inspired UI:** Giao diện hiện đại, tối giản và mang phong cách anime đặc trưng.
+* **Lightweight Core:** Tối ưu hóa hiệu suất, khởi động nhanh và tiêu tốn ít tài nguyên hệ thống.
+* **Smart Configuration:** * Hệ thống quản lý module linh hoạt.
+    * **Auto-Save Logic:** Mọi thay đổi khi bạn toggle (bật/tắt) các module sẽ được **tự động lưu (autoSave)** ngay lập tức, loại bỏ thao tác lưu thủ công rườm rà.
+* **New Year Theme:** Giao diện đặc biệt dành riêng cho đợt phát hành đầu năm `NewYearCelebration`.
 
 ---
 
-## 🛠️ Build & Run
+## 🛠 Installation & Usage
 
-1. Clone the repository:
-```bash
-git clone https://github.com/pmgdev64/luna-launcher.git
-cd luna-launcher
-```
+1.  **Tải xuống:** Truy cập tab [Releases](https://github.com/pmgdev64/luna-launcher/releases) và tải bản `.jar` hoặc installer mới nhất.
+2.  **Yêu cầu:** Đảm bảo máy tính đã cài đặt Java 17 trở lên.
+3.  **Khởi chạy:** Mở launcher và bắt đầu hành trình Minecraft của bạn với phong cách hoàn toàn mới.
 
 ---
-[![Star History Chart](https://api.star-history.com/svg?repos=pmgdev64/luna-launcher&type=date&legend=top-left)](https://www.star-history.com/#pmgdev64/luna-launcher&type=date&legend=top-left)
+
+## 🤝 Contribution
+
+Nếu bạn yêu thích dự án, hãy để lại một ⭐ trên GitHub để ủng hộ PmgTeam nhé!
+
+---
+<p align="center">Made with ❤️ by PmgDev64</p>
