@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="banner.png" alt="LunaLauncher Banner">
+  <img src="banner4.png" alt="LunaLauncher Banner">
 </div>
 
 # Luna Launcher – Release 0.0.1
