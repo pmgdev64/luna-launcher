@@ -2,10 +2,10 @@
   <img src="banner.png" alt="LunaLauncher Banner">
 </div>
 
-# Luna Launcher – Beta 0.0.03
+# Luna Launcher – Release 0.0.1
 
-**Theme:** `earlyWinter`  
-**Release date:** 26/10/2025  
+**Theme:** `NewYearCelebration`  
+**Release date:** 01/01/2026 
 **Author:** PmgDev64 / PepperMCGamers Ch. PmgTeam  
 
 A lightweight, clean, and modern Minecraft launcher with anime-inspired UI.
