@@ -12,7 +12,7 @@ A lightweight, clean, and modern Minecraft launcher with anime-inspired UI.
 
 [![Release](https://img.shields.io/github/v/release/pmgdev64/luna-launcher?style=flat-square)](https://github.com/pmgdev64/luna-launcher/releases)
 [![JavaFX](https://img.shields.io/badge/JavaFX-17-blue?style=flat-square)](https://www.oracle.com/java/technologies/install-javafx-sdk.html)
-[![Status](https://img.shields.io/badge/build-beta-blue?style=flat-square)]()
+[![Status](https://img.shields.io/badge/build-release-blue?style=flat-square)]()
 
 ---
 
