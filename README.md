@@ -65,7 +65,9 @@ Luna Launcher là một trình khởi chạy Minecraft hiện đại, ưu tiên 
 
 ---
 <p align="center">Made with ❤️ by PmgDev64</p>
-### ✨ Key Features
+
+## ✨ Key Features
+
 * **Anime-Inspired UI:** Giao diện hiện đại, tối giản và mang phong cách anime đặc trưng.
 * **Lightweight Core:** Tối ưu hóa hiệu suất, khởi động nhanh và tiêu tốn ít tài nguyên hệ thống.
 * **Smart Configuration:** * Hệ thống quản lý module linh hoạt.
