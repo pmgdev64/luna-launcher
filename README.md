@@ -1,3 +1,8 @@
+# Announcements: 
+- this project will be comeback but will no longer use java, and will be switch into c++
+
+---
+
 <div align="center">
   <img src="banner4.png" alt="LunaLauncher Banner">
 </div>
